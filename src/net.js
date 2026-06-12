@@ -1,9 +1,12 @@
 // ASHEN VALE — coop client. Host-authoritative enemies, relayed world events.
 import { MAX_PARTY } from './coop.js';
 
+const HOSTED_RELAY = 'wss://ashen-vale-coop-production.up.railway.app';
+
 function defaultCoopUrl() {
   const fromEnv = import.meta.env.VITE_WS_URL;
   if (fromEnv) return fromEnv;
+  if (import.meta.env.PROD && location.protocol === 'https:') return HOSTED_RELAY;
   return `ws://${location.hostname}:8081`;
 }
 
@@ -87,10 +90,12 @@ export class Net {
       }
       case 'youAreHost':
         this.isHost = true;
-        g.toast('You are now the host');
-        g.ui.setCoopStatus(this.coopStatusLine());
+        g.onBecomeHost();
         break;
-      case 'hostChange': break;
+      case 'hostChange':
+        if (msg.id === this.id) g.onBecomeHost();
+        else g.toast('Host left — a new host is leading the world');
+        break;
       case 'state': {
         const p = this.peers.get(msg.from);
         if (p) { p.state = msg.s; g.updateRemotePlayer(msg.from, p); }
