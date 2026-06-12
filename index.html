@@ -94,48 +94,57 @@
       <div id="title-art">
         <h1>ASHEN&nbsp;VALE</h1>
         <div id="title-sub">~ a tale of the hollow road ~</div>
-        <div id="title-pitch">Zelda exploration · Diablo loot · optional co-op</div>
       </div>
       <div id="save-slots">
         <button type="button" class="save-slot" data-slot="0"><span class="slot-num">I</span><span class="slot-info">EMPTY</span></button>
         <button type="button" class="save-slot" data-slot="1"><span class="slot-num">II</span><span class="slot-info">EMPTY</span></button>
         <button type="button" class="save-slot" data-slot="2"><span class="slot-num">III</span><span class="slot-info">EMPTY</span></button>
       </div>
-      <div id="class-select">
-        <div class="class-card" data-class="knight">
-          <canvas width="96" height="96"></canvas>
-          <h3>KNIGHT</h3>
-          <p>Sword &amp; steel. Trades range for raw arm and a shield to charge behind.</p>
-          <div class="card-keys">SLASH · CLEAVE · WHIRLWIND<br>SHIELD RUSH</div>
+      <div id="title-slot-hint">Choose a save slot</div>
+      <div id="title-after-slot" class="hidden">
+        <div id="class-select">
+          <div class="class-card" data-class="knight">
+            <canvas width="96" height="96"></canvas>
+            <h3>KNIGHT</h3>
+            <p>Sword &amp; steel. Trades range for raw arm and a shield to charge behind.</p>
+            <div class="card-keys">SLASH · CLEAVE · WHIRLWIND<br>SHIELD RUSH</div>
+          </div>
+          <div class="class-card" data-class="ranger">
+            <canvas width="96" height="96"></canvas>
+            <h3>RANGER</h3>
+            <p>Swift bow from the deep woods. Keep your distance, the arrows do the rest.</p>
+            <div class="card-keys">QUICK SHOT · POWER SHOT · MULTISHOT<br>TUMBLE</div>
+          </div>
+          <div class="class-card" data-class="mage">
+            <canvas width="96" height="96"></canvas>
+            <h3>MAGE</h3>
+            <p>Old magic of the vale. Fragile, but the dark bends around a good spark.</p>
+            <div class="card-keys">SPARK · SPARK BOLT · NOVA<br>BLINK</div>
+          </div>
         </div>
-        <div class="class-card" data-class="ranger">
-          <canvas width="96" height="96"></canvas>
-          <h3>RANGER</h3>
-          <p>Swift bow from the deep woods. Keep your distance, the arrows do the rest.</p>
-          <div class="card-keys">QUICK SHOT · POWER SHOT · MULTISHOT<br>TUMBLE</div>
+        <div id="hero-panel" class="hidden">
+          <canvas id="hero-portrait" width="96" height="96"></canvas>
+          <div id="hero-info">
+            <h3 id="hero-class-name"></h3>
+            <p id="hero-meta"></p>
+          </div>
         </div>
-        <div class="class-card" data-class="mage">
-          <canvas width="96" height="96"></canvas>
-          <h3>MAGE</h3>
-          <p>Old magic of the vale. Fragile, but the dark bends around a good spark.</p>
-          <div class="card-keys">SPARK · SPARK BOLT · NOVA<br>BLINK</div>
+        <div id="title-buttons">
+          <button id="btn-solo" disabled>PLAY SOLO</button>
+          <button id="btn-coop" disabled>PLAY CO-OP</button>
+        </div>
+        <div id="title-coop-panel" class="hidden">
+          <div class="coop-panel-head">ONLINE CO-OP</div>
+          <div class="coop-fields">
+            <label>ROOM<input type="text" id="coop-room" placeholder="room name" value="vale" maxlength="24" /></label>
+            <label>NAME<input type="text" id="coop-name" placeholder="hero name" maxlength="10" /></label>
+            <label>SERVER<input type="text" id="coop-server" placeholder="ws://host:8081" /></label>
+          </div>
+          <p class="coop-note">Each player loads their own save · world gates follow the host · leave SERVER blank for the hosted relay</p>
+          <button type="button" id="btn-coop-start">JOIN ROOM</button>
         </div>
       </div>
-      <div id="title-coop-panel" class="hidden">
-        <div class="coop-panel-head">ONLINE CO-OP</div>
-        <div class="coop-fields">
-          <label>ROOM<input type="text" id="coop-room" placeholder="room name" value="vale" maxlength="24" /></label>
-          <label>NAME<input type="text" id="coop-name" placeholder="hero name" maxlength="10" /></label>
-          <label>SERVER<input type="text" id="coop-server" placeholder="ws://host:8081" /></label>
-        </div>
-        <p class="coop-note">Bring your save · world gates follow the host · leave SERVER blank for the hosted relay</p>
-      </div>
-      <div id="title-buttons">
-        <button id="btn-solo" disabled>PLAY SOLO</button>
-        <button id="btn-coop" disabled>PLAY CO-OP</button>
-      </div>
-      <div id="title-slot-hint">Choose a save slot to begin</div>
-      <div id="title-controls">
+      <div id="title-controls" class="hidden">
         <span><kbd>WASD</kbd> move</span>
         <span><kbd>L-CLICK</kbd> attack</span>
         <span><kbd>R-CLICK</kbd> skill</span>

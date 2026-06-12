@@ -46,6 +46,15 @@ export function classSkillList(klass) {
   return [...k.skills, k.mobility];
 }
 
+export function skillDefFor(klass, id) {
+  const k = CLASSES[klass];
+  if (!k) return null;
+  if (k.basic?.id === id) return k.basic;
+  for (const s of k.skills) if (s.id === id) return s;
+  if (k.mobility?.id === id) return k.mobility;
+  return null;
+}
+
 export function skillDamage(player, skill, lv) {
   const base = player.stats.dmg;
   const mult = (skill.mult || 1) + (lv - 1) * ((skill.mult || 1) > 1.4 ? 0.4 : 0.2);

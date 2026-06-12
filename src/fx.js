@@ -4,36 +4,35 @@ import { PAL, makeCanvas, canvasTexture } from './art.js';
 import { SPRITE_TILT } from './world.js';
 
 const GLOW_COLOR = new THREE.Color(PAL[3]);
-const MAX_PROP_LIGHTS = 10;
-const LIGHT_CULL_DIST = 22;
+const GLOW_UPDATE_DIST = 26;
 
 const GLOW_PRESETS = {
   fireplace: {
-    emissive: 0.34, light: true, intensity: 2.6, distance: 3.6, decay: 2,
-    flickerSpeed: 8.5, flickerAmt: 0.14, y: 0.55, resize: 0.04, resizeSpeed: 5.5, fadeSpeed: 1.8,
+    emissive: 0.52, bakedHalo: { size: 2.6, opacity: 0.16, y: 0.55 },
+    flickerSpeed: 8.5, flickerAmt: 0.14, resize: 0.04, resizeSpeed: 5.5, fadeSpeed: 1.8,
   },
   lamp: {
-    emissive: 0.26, light: true, intensity: 1.5, distance: 2.8, decay: 2,
-    flickerSpeed: 2.8, flickerAmt: 0.05, y: 1.05, resize: 0.025, resizeSpeed: 3.5, fadeSpeed: 2,
+    emissive: 0.42, bakedHalo: { size: 1.7, opacity: 0.13, y: 1.05 },
+    flickerSpeed: 2.8, flickerAmt: 0.05, resize: 0.025, resizeSpeed: 3.5, fadeSpeed: 2,
   },
   candle: {
-    emissive: 0.3, light: false,
-    flickerSpeed: 10, flickerAmt: 0.18, y: 0.45, resize: 0.03, resizeSpeed: 9, fadeSpeed: 2.2,
+    emissive: 0.38, bakedHalo: { size: 0.9, opacity: 0.1, y: 0.45 },
+    flickerSpeed: 10, flickerAmt: 0.18, resize: 0.03, resizeSpeed: 9, fadeSpeed: 2.2,
   },
   shrine: {
-    emissive: 0.2, light: true, intensity: 1.1, distance: 2.6, decay: 2,
-    flickerSpeed: 2, flickerAmt: 0.1, y: 1.1, fadeSpeed: 1.5,
+    emissive: 0.36, bakedHalo: { size: 1.9, opacity: 0.11, y: 1.1 },
+    flickerSpeed: 2, flickerAmt: 0.1, fadeSpeed: 1.5,
   },
   charm: {
-    emissive: 0.28, light: false,
-    flickerSpeed: 4, flickerAmt: 0.16, y: 0.45, fadeSpeed: 2,
+    emissive: 0.32, bakedHalo: { size: 0.75, opacity: 0.08, y: 0.45 },
+    flickerSpeed: 4, flickerAmt: 0.16, fadeSpeed: 2,
   },
   lever_on: {
-    emissive: 0.48, light: false,
+    emissive: 0.55,
     flickerSpeed: 5, flickerAmt: 0.12, y: 0.55, fadeSpeed: 3,
   },
   fishspot: {
-    emissive: 0.12, light: false, flickerSpeed: 1.2, flickerAmt: 0.22, y: 0.2, fadeSpeed: 1.2,
+    emissive: 0.18, flickerSpeed: 1.2, flickerAmt: 0.22, y: 0.2, fadeSpeed: 1.2,
   },
 };
 
@@ -65,11 +64,10 @@ function addHalo(parent, size, color, opacity = 0.2) {
   return halo;
 }
 
-/** Warm emissive + capped point lights on prop billboards. */
+/** Baked emissive + static halo planes — no per-prop PointLights. */
 export class GlowSystem {
   constructor() {
     this.nodes = [];
-    this._lightCount = 0;
     this._tmp = new THREE.Vector3();
   }
 
@@ -86,16 +84,13 @@ export class GlowSystem {
     if (cfg.emissive != null && mesh.material) {
       node.baseEmissive = cfg.emissive;
       mesh.material.emissive = mesh.material.emissive || new THREE.Color(PAL[0]);
-      mesh.material.emissiveIntensity = 0;
+      mesh.material.emissiveIntensity = opts.skipFade ? cfg.emissive : 0;
     }
-    const wantLight = cfg.light && this._lightCount < MAX_PROP_LIGHTS;
-    if (wantLight) {
-      const light = new THREE.PointLight(GLOW_COLOR, 0, cfg.distance, cfg.decay);
-      light.position.set(0, cfg.y ?? 0.6, 0);
-      mesh.add(light);
-      node.light = light;
-      node.baseIntensity = cfg.intensity;
-      this._lightCount++;
+    if (cfg.bakedHalo) {
+      const h = cfg.bakedHalo;
+      node.bakedHalo = addHalo(mesh, h.size, GLOW_COLOR, h.opacity);
+      node.bakedHalo.position.y = h.y ?? 0.6;
+      node.bakedHaloBase = h.opacity;
     }
     this.nodes.push(node);
     return node;
@@ -104,11 +99,7 @@ export class GlowSystem {
   setLever(prop, on) {
     if (prop.glowNode) {
       const idx = this.nodes.indexOf(prop.glowNode);
-      if (idx >= 0) {
-        if (prop.glowNode.light) this._lightCount = Math.max(0, this._lightCount - 1);
-        this.nodes.splice(idx, 1);
-      }
-      if (prop.glowNode.light) prop.mesh.remove(prop.glowNode.light);
+      if (idx >= 0) this.nodes.splice(idx, 1);
       prop.glowNode = null;
     }
     if (on && prop.mesh) prop.glowNode = this.attach(prop.mesh, 'lever_on', { skipFade: true });
@@ -119,23 +110,25 @@ export class GlowSystem {
       const cfg = GLOW_PRESETS[n.kind];
       if (!cfg || !n.mesh?.material) continue;
 
+      let dist = Infinity;
+      if (focusPos) {
+        n.mesh.getWorldPosition(this._tmp);
+        dist = Math.hypot(this._tmp.x - focusPos.x, this._tmp.z - focusPos.z);
+      }
+
+      if (focusPos && dist > GLOW_UPDATE_DIST) {
+        if (n.baseEmissive != null) n.mesh.material.emissiveIntensity = n.baseEmissive * 0.55;
+        if (n.bakedHalo) n.bakedHalo.material.opacity = n.bakedHaloBase * 0.45;
+        continue;
+      }
+
       if (n.fade < 1) n.fade = Math.min(1, n.fade + _dt * n.fadeSpeed);
       const fade = smoothstep(n.fade);
-
-      let distMul = 1;
-      if (focusPos && n.light) {
-        n.mesh.getWorldPosition(this._tmp);
-        const d = Math.hypot(this._tmp.x - focusPos.x, this._tmp.z - focusPos.z);
-        n.light.visible = d < LIGHT_CULL_DIST;
-        if (d > LIGHT_CULL_DIST * 0.65) {
-          distMul = Math.max(0, 1 - (d - LIGHT_CULL_DIST * 0.65) / (LIGHT_CULL_DIST * 0.35));
-        }
-      }
 
       const flicker = 1 + Math.sin(t * cfg.flickerSpeed + n.phase) * cfg.flickerAmt;
       const em = (n.baseEmissive ?? 0) * flicker * fade;
       if (n.baseEmissive != null) n.mesh.material.emissiveIntensity = em;
-      if (n.light) n.light.intensity = n.baseIntensity * flicker * fade * distMul;
+      if (n.bakedHalo) n.bakedHalo.material.opacity = n.bakedHaloBase * flicker * fade;
 
       if (cfg.resize) {
         const pulse = 1 + Math.sin(t * cfg.resizeSpeed + n.phase) * cfg.resize;
@@ -146,7 +139,6 @@ export class GlowSystem {
 
   clear() {
     this.nodes = [];
-    this._lightCount = 0;
   }
 }
 

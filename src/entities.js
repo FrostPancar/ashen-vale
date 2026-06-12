@@ -718,6 +718,7 @@ export class Projectile {
     this.big = opts.big || this.pierce; // power shot / heavy bolt read bigger
     this.hitSet = new Set();
     this.trailT = 0;
+    this.cosmetic = opts.cosmetic || false;
     this.angle = Math.atan2(vel.z, vel.x);
 
     if (this.kind === 'arrow') {
@@ -753,11 +754,8 @@ export class Projectile {
     }
     this.mesh.position.copy(this.pos).setY(this.y0);
 
-    if (this.baseGlow > 0) {
-      this.glowLight = new THREE.PointLight(new THREE.Color(PAL[3]), this.baseGlow, 1.9, 2);
-      this.glowLight.position.set(0, 0.05, 0);
-      this.mesh.add(this.glowLight);
-    }
+    // Halo mesh only — per-projectile PointLights tank FPS in spell spam.
+    this.glowLight = null;
     this.dead = false;
   }
   update(dt, world) {
@@ -772,10 +770,8 @@ export class Projectile {
       this.mesh.position.set(this.pos.x, this.y0 + Math.sin(this.life * 18) * 0.025, this.pos.z);
       this.mesh.rotation.z += dt * 5; // gentle orb shimmer-spin
     }
-    const pulse = 0.88 + Math.sin(this.life * 15) * 0.12;
-    if (this.glowLight) this.glowLight.intensity = this.baseGlow * pulse;
     if (this.halo) {
-      this.halo.material.opacity = 0.14 + Math.sin(this.life * 14) * 0.06;
+      this.halo.material.opacity = (0.14 + Math.sin(this.life * 14) * 0.06) * (this.baseGlow > 0 ? 1 : 0.6);
       const hs = 1 + Math.sin(this.life * 11) * 0.05;
       this.halo.scale.set(hs, hs, 1);
     }
@@ -804,11 +800,12 @@ export class Drop {
     this.age = 0;
     this.dead = false;
     if (kind === 'item' && (data.rarity === 'rare' || data.rarity === 'legendary')) {
+      const leg = data.rarity === 'legendary';
       const beam = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.05, 0.12, 2.2, 6, 1, true),
-        new THREE.MeshBasicMaterial({ color: PAL[3], transparent: true, opacity: 0.22, depthWrite: false })
+        new THREE.CylinderGeometry(0.05, leg ? 0.12 : 0.09, leg ? 2.2 : 1.8, 6, 1, true),
+        new THREE.MeshBasicMaterial({ color: PAL[3], transparent: true, opacity: leg ? 0.22 : 0.16, depthWrite: false }),
       );
-      beam.position.y = 1.1;
+      beam.position.y = leg ? 1.1 : 0.95;
       this.mesh.add(beam);
     }
   }

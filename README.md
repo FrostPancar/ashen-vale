@@ -13,9 +13,32 @@ npm run dev        # game client  -> http://localhost:5173
 npm run server     # co-op server -> ws://localhost:8081  (optional, only for online co-op)
 ```
 
-Open `http://localhost:5173`, pick a class, play. For co-op, start the server, check
-**ONLINE CO-OP** on the title screen, share a room name with a friend on the same
-network, and both join the same room.
+Open `http://localhost:5173`, choose a **save slot**, pick a class (or continue), then **PLAY SOLO**
+or **PLAY CO-OP**.
+
+## Co-op (2–4 players)
+
+1. **Start the relay** — `npm run server` (listens on `ws://localhost:8081`)
+2. **Host** — pick a save slot → **PLAY CO-OP** → enter a **room name** and **hero name**
+3. **Guests** — same room name on their machine; load their own save slot first
+4. **Over the internet** — host runs the server and shares their public IP + port `8081`
+   (optional custom URL in the SERVER field, e.g. `ws://203.0.113.10:8081`)
+
+### What syncs vs what stays personal
+
+| Shared (follows **host**) | Personal (each player) |
+| --- | --- |
+| Main quest stage & world gates | Level, XP, gold, gear |
+| Levers, boulders, boss flags | Side quests & bell charms |
+| Chest *open* state (first opener gets curated loot) | Mob drops, gold piles (instanced) |
+| Map travel when using portals (party must stay within 4 tiles) | Save slot progress |
+
+- **First joiner** in a room is the **host** (simulates enemies). If the host leaves, another
+  player is promoted automatically.
+- **Guests warp to the host** on join. Stay on the same map; portals require the whole party nearby.
+- If the server is down or the room is full (4 players), the game continues **solo** with a notice.
+
+See [Co-op architecture](#co-op-architecture) below for technical details.
 
 ## Controls
 
@@ -65,23 +88,24 @@ network, and both join the same room.
   mana, defense, move speed, crit, life-on-hit, cooldown reduction.
 - XP, levels, skill points, 5 skill ranks per skill, gold, potions, shops, instanced loot
   in co-op (everyone gets their own drops).
-- Progress auto-saves to `localStorage` (continue from the title screen).
+- Progress auto-saves to **3 local save slots** (per-slot `localStorage`).
 
 ## Co-op architecture
 
-- `server.js` — tiny `ws` room relay. First member of a room is the **host**.
-- The host simulates enemy AI and broadcasts enemy state (~8Hz); guests send their hits
-  to the host. World events (levers, gates, boulders, boss death) are relayed and merged
-  into each client's flags; loot is rolled per-player.
-- Host migration on disconnect; the game degrades gracefully to solo if the server is down.
+- `server.js` — tiny `ws` room relay (max **4** players per room). First member is **host**.
+- Host simulates enemy AI (~8Hz sync); guests send hits to the host. Enemies scale with party
+  size (+60% HP / +15% damage per extra player).
+- World events (levers, gates, boulders, Warden death, chest opens) relay to all clients;
+  **mob loot and XP** roll per player who damaged the enemy.
+- **Warden vault** — each fighter claims their own class trophy once (`CLAIM VAULT`).
+- **Host migration** on disconnect; solo fallback if the relay is unreachable.
 
 ## Tech
 
 - Three.js perspective camera at a Pokémon-style pitch; characters/props are tilted
   billboard sprites over a 3D world (extruded buildings, instanced cave walls, fog,
   per-map lighting, torch flicker in caves, particles, screen shake, scanline overlay).
-- All pixel art generated on `<canvas>` in a 4-shade monochrome gray palette (`#1c1d1c`,
-  `#565956`, `#a6a9a4`, `#e2e4df`).
+- All pixel art generated on `<canvas>` in a 4-shade monochrome gray palette (see `style.css`).
 - Music & SFX are WebAudio chiptune, sequenced at runtime (town / route / cave / boss themes).
 
 ## Dev tools
