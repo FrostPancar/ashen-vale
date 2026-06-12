@@ -20,6 +20,12 @@ export const MAP_NAMES = {
   armory: 'ARMORY',
   arena: 'THE PIT',
   tabb_house: "TABB'S HOUSE",
+  route_claim: 'CLAIM ROAD',
+  claim_cave: 'CONTRACT CAVE',
+  route_thornwood: 'THORNWOOD VERGE',
+  briarfen: 'BRIARFEN',
+  route_silt_descent: "KING'S DESCENT",
+  tidehaven: 'TIDEHAVEN',
 };
 
 const ARROW_TILE = (() => {

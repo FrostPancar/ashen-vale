@@ -415,11 +415,16 @@ function buildAshfall() {
     { x: 4, y: 16, w: 8, h: 6, door: { x: 8, y: 21 }, label: "TABB'S", to: 'tabb_house' },
   ];
   for (const b of buildings) rect(g, b.x, b.y, b.w, b.h, 's');
+  // north gate opening (Claim Road — post-demo)
+  rect(g, 20, 0, 4, 2, 't');
   return {
     id: 'ashfall', name: 'ASHFALL', grid: g, ambient: 'day', music: 'town',
     buildings,
     portals: [
       { x: 20, y: 35, w: 4, h: 1, to: 'route1', tx: 6.5, ty: 9.5 },
+      { x: 20, y: 0, w: 4, h: 1, to: 'route_claim', tx: 22, ty: 54,
+        requires: 'contract_accepted',
+        lockMsg: 'HALE: "North road\'s for Consolidated Mining contract work. Sign on at the market first."' },
     ],
     props: [
       { type: 'fountain', x: 22, y: 16 },
@@ -557,6 +562,260 @@ function buildArena() {
   };
 }
 
+/* =========================================================
+   POST-DEMO — Ashfall → Briarfen → Tidehaven (scaffold)
+   See docs/design/STORY_NOTES.md §8–11 · canvases/post-demo-routes
+   ========================================================= */
+
+/** Claim Road — ash scrub badlands, Ashfall north gate → contract cave mouth. */
+function buildRouteClaim() {
+  const g = G(44, 56, 's');
+  scatter(g, ':', 180, 41, 's');
+  scatter(g, '#', 24, 42, 's.:');
+  frame(g, 0, 0, 44, 56, 's');
+  rect(g, 1, 1, 42, 54, ':');
+  // main north road
+  rect(g, 20, 2, 4, 52, 'p');
+  rect(g, 20, 54, 4, 2, 'p');
+  // thornwood-edge band (north third)
+  scatter(g, '#', 40, 43, '.:p');
+  scatter(g, 'h', 20, 44, '.:');
+  rect(g, 8, 8, 10, 6, 's'); // mining camp clearing
+  return {
+    id: 'route_claim', name: 'CLAIM ROAD', majorType: 'badlands_route', biome: 'ash_scrub',
+    grid: g, ambient: 'day', music: 'route',
+    buildings: [],
+    portals: [
+      { x: 20, y: 55, w: 4, h: 1, to: 'ashfall', tx: 22, ty: 3 },
+      { x: 20, y: 0, w: 4, h: 1, to: 'claim_cave', tx: 20, ty: 29 },
+    ],
+    props: [
+      { type: 'sign', x: 22, y: 52, text: 'CONSOLIDATED MINING CO. — lease road. Mind the wire. Mind the beetles.' },
+      { type: 'sign', x: 12, y: 10, text: 'NORTH: Contract Cave mouth. SOUTH: Ashfall gates.' },
+      { type: 'bench', x: 10, y: 11 },
+      { type: 'crate', x: 11, y: 9 }, { type: 'barrel', x: 13, y: 9 }, { type: 'pot', x: 12, y: 10 },
+      { type: 'lamp', x: 24, y: 28 },
+      { type: 'rock', x: 30, y: 20 }, { type: 'rock', x: 8, y: 32 },
+    ],
+    npcs: [],
+    enemies: [
+      { type: 'husk', x: 28, y: 24 }, { type: 'husk', x: 32, y: 18 },
+      { type: 'slime', x: 10, y: 40 }, { type: 'slime', x: 34, y: 36 },
+    ],
+  };
+}
+
+/** Contract Cave — Rival set-piece + Lumen Gem (scaffold layout; fights TBD). */
+function buildClaimCave() {
+  const g = G(40, 32, 'r');
+  rect(g, 12, 22, 16, 8, 'c');   // entry / miner foyer
+  rect(g, 18, 14, 4, 8, 'c');    // north corridor
+  rect(g, 8, 8, 24, 6, 'c');     // main hall + arena
+  rect(g, 16, 2, 8, 6, 'c');     // gem vault
+  set(g, 19, 30, 'S'); set(g, 20, 30, 'S');
+  set(g, 19, 7, 'S'); set(g, 20, 7, 'S');
+  return {
+    id: 'claim_cave', name: 'CONTRACT CAVE', majorType: 'mine_shaft', biome: 'cave',
+    grid: g, ambient: 'cave', music: 'cave',
+    buildings: [],
+    portals: [
+      { x: 19, y: 30, w: 2, h: 2, to: 'route_claim', tx: 22, ty: 2 },
+      { x: 19, y: 0, w: 2, h: 1, to: 'route_thornwood', tx: 20, ty: 46,
+        requires: 'glitch_active',
+        lockMsg: 'The tunnel ahead shimmers wrong. Something must break before the thornwood opens.' },
+    ],
+    props: [
+      { type: 'sign', x: 17, y: 27, text: 'MINING SAFETY — hard hats optional. Feelings not billable. Beetles mandatory.' },
+      { type: 'sign', x: 14, y: 10, text: 'ARENA MARK — Consolidated Mining dispute resolution zone.' },
+      { type: 'sign', x: 18, y: 4, text: 'LUMEN CLAIM — light that does not belong in the vale. Do not touch. (Everyone touches it.)' },
+      { type: 'shrine', id: 'lumen_gem', x: 20, y: 4 },
+      { type: 'crate', x: 14, y: 24 }, { type: 'pot', x: 15, y: 25 }, { type: 'barrel', x: 25, y: 23 },
+      { type: 'bench', x: 22, y: 24 },
+      { type: 'rock', x: 10, y: 10 }, { type: 'rock', x: 29, y: 11 },
+    ],
+    npcs: [
+      { id: 'miner1', sprite: 'villager', x: 16, y: 25, dir: 'right', dialog: 'villager1' },
+      { id: 'miner2', sprite: 'villager2', x: 24, y: 26, wander: 2, dialog: 'villager2' },
+    ],
+    enemies: [],
+  };
+}
+
+/** Thornwood Verge — dense thornwood route, cave north exit → Briarfen south gate. */
+function buildRouteThornwood() {
+  const g = G(40, 48, '.');
+  scatter(g, ':', 140, 51, '.');
+  rect(g, 0, 0, 40, 2, '#'); rect(g, 0, 0, 3, 48, '#'); rect(g, 37, 0, 3, 48, '#');
+  rect(g, 0, 46, 40, 2, '#');
+  scatter(g, '#', 70, 52, '.:');
+  scatter(g, '^', 24, 53, '.:');
+  rect(g, 19, 2, 2, 44, 'p');
+  rect(g, 19, 46, 2, 2, 'p');
+  rect(g, 24, 20, 8, 6, ',');
+  rect(g, 8, 32, 7, 5, ',');
+  return {
+    id: 'route_thornwood', name: 'THORNWOOD VERGE', majorType: 'forest_route', biome: 'hollow_thornwood',
+    grid: g, ambient: 'day', music: 'route',
+    buildings: [],
+    portals: [
+      { x: 19, y: 47, w: 2, h: 2, to: 'claim_cave', tx: 20, ty: 8 },
+      { x: 19, y: 0, w: 2, h: 1, to: 'briarfen', tx: 24, ty: 38,
+        requires: 'glitch_active',
+        lockMsg: 'The thorns knit shut. The vale still remembers gray.' },
+    ],
+    props: [
+      { type: 'sign', x: 22, y: 44, text: 'SOUTH: Contract Cave. NORTH: Briarfen market road.' },
+      { type: 'sign', x: 12, y: 22, text: 'Thorn Compact waypost — contracts outlive heroes.' },
+      { type: 'bench', x: 28, y: 18 },
+      { type: 'rock', x: 11, y: 14 }, { type: 'crate', x: 30, y: 30 },
+    ],
+    npcs: [],
+    enemies: [
+      { type: 'bat', x: 28, y: 24 }, { type: 'bat', x: 31, y: 28 },
+      { type: 'husk', x: 12, y: 34 }, { type: 'husk', x: 16, y: 36 },
+      { type: 'slime', x: 26, y: 12 },
+    ],
+  };
+}
+
+/** Briarfen — Ch.3 thornwood market hub (shell). */
+function buildBriarfen() {
+  const g = G(48, 40, '.');
+  scatter(g, ':', 90, 61, '.');
+  rect(g, 0, 0, 48, 2, '#'); rect(g, 0, 38, 48, 2, '#');
+  rect(g, 0, 0, 2, 40, '#'); rect(g, 46, 0, 2, 40, '#');
+  rect(g, 22, 38, 4, 2, 'p');
+  rect(g, 22, 4, 4, 34, 'p');
+  rect(g, 16, 14, 16, 10, 'p');
+  rect(g, 46, 14, 2, 12, 'p');
+  rect(g, 38, 14, 9, 2, 'p');
+  scatter(g, '#', 30, 62, '.:p');
+  scatter(g, 'h', 18, 63, '.:');
+  const buildings = [
+    { x: 4, y: 5, w: 10, h: 7, door: { x: 9, y: 11 }, label: 'APOTHECARY' },
+    { x: 32, y: 5, w: 11, h: 7, door: { x: 37, y: 11 }, label: 'THORN INN' },
+    { x: 6, y: 22, w: 12, h: 8, door: { x: 12, y: 29 }, label: 'TIMBER COMPACT' },
+  ];
+  for (const b of buildings) rect(g, b.x, b.y, b.w, b.h, '.');
+  return {
+    id: 'briarfen', name: 'BRIARFEN', majorType: 'market_town', biome: 'hollow_thornwood',
+    grid: g, ambient: 'day', music: 'town',
+    buildings,
+    portals: [
+      { x: 22, y: 39, w: 4, h: 1, to: 'route_thornwood', tx: 20, ty: 2 },
+      { x: 47, y: 14, w: 1, h: 4, to: 'route_silt_descent', tx: 3, ty: 70,
+        requires: 'matriarch_dead',
+        lockMsg: 'East road sealed until the Thorn Matriarch falls — or Lace Harrow grants passage.' },
+    ],
+    props: [
+      { type: 'shrine', id: 'bell_gate_briarfen', x: 18, y: 16 },
+      { type: 'stall', x: 14, y: 18 }, { type: 'stall', x: 17, y: 18 }, { type: 'stall', x: 20, y: 18 },
+      { type: 'fountain', x: 24, y: 17 },
+      { type: 'bench', x: 28, y: 20 }, { type: 'bench', x: 15, y: 24 },
+      { type: 'lamp', x: 16, y: 14 }, { type: 'lamp', x: 31, y: 14 },
+      { type: 'sign', x: 20, y: 37, text: 'BRIARFEN — thorn market. Population: entangled.' },
+      { type: 'sign', x: 40, y: 15, text: 'EAST: King\'s Descent to Tidehaven (sealed).' },
+      { type: 'sign', x: 24, y: 3, text: 'NORTH: Matriarch Depths — not yet mapped.' },
+      { type: 'crate', x: 33, y: 20 }, { type: 'barrel', x: 35, y: 21 },
+    ],
+    npcs: [
+      { id: 'lace_stub', sprite: 'merchant', x: 19, y: 19, dir: 'down', dialog: 'merchant' },
+    ],
+    enemies: [],
+  };
+}
+
+/** King's Descent — cliff + river + tide flats, Briarfen east → Tidehaven west. */
+function buildRouteSiltDescent() {
+  const g = G(52, 72, '.');
+  scatter(g, ':', 160, 71, '.');
+  rect(g, 0, 0, 52, 2, '#'); rect(g, 0, 0, 3, 72, '#'); rect(g, 49, 0, 3, 72, '#');
+  rect(g, 0, 70, 52, 2, '#');
+  scatter(g, '#', 50, 72, '.:');
+  // road: west gate south → climb → river → flats north
+  rect(g, 2, 68, 4, 2, 'p');
+  rect(g, 4, 40, 2, 30, 'p');
+  rect(g, 4, 40, 20, 2, 'p');
+  rect(g, 22, 28, 2, 14, 'p');
+  rect(g, 22, 28, 18, 2, 'p');
+  rect(g, 38, 8, 2, 22, 'p');
+  rect(g, 38, 8, 10, 2, 'p');
+  // cliff band
+  rect(g, 12, 34, 28, 1, '=');
+  rect(g, 12, 38, 28, 1, '=');
+  rect(g, 39, 34, 1, 5, '=');
+  // river crossing
+  rect(g, 6, 24, 40, 3, 'w');
+  rect(g, 22, 23, 2, 5, 'b');
+  // tide flats north
+  rect(g, 4, 2, 44, 10, 's');
+  scatter(g, 's', 40, 73, '.');
+  return {
+    id: 'route_silt_descent', name: "KING'S DESCENT", majorType: 'cliff_route', biome: 'tide_flats',
+    grid: g, ambient: 'day', music: 'route',
+    buildings: [],
+    portals: [
+      { x: 2, y: 69, w: 4, h: 1, to: 'briarfen', tx: 45.5, ty: 16 },
+      { x: 42, y: 0, w: 4, h: 2, to: 'tidehaven', tx: 3, ty: 40,
+        requires: 'matriarch_dead',
+        lockMsg: 'The dock road stays closed until Briarfen clears you for the coast.' },
+    ],
+    props: [
+      { type: 'sign', x: 6, y: 66, text: 'WEST: Briarfen. NORTH: Tidehaven flats. Mind the tide.' },
+      { type: 'sign', x: 26, y: 36, text: 'Old king\'s highway toll — exact change only. (Exact change: none.)' },
+      { type: 'bench', x: 24, y: 32 },
+      { type: 'fishspot', x: 44, y: 6 },
+      { type: 'rock', x: 14, y: 42 }, { type: 'crate', x: 30, y: 50 },
+    ],
+    npcs: [],
+    enemies: [
+      { type: 'slime', x: 10, y: 58 }, { type: 'bat', x: 18, y: 44 },
+      { type: 'husk', x: 34, y: 18 }, { type: 'husk', x: 40, y: 12 },
+    ],
+  };
+}
+
+/** Tidehaven — Ch.4 siltshore port hub (shell). */
+function buildTidehaven() {
+  const g = G(52, 44, 's');
+  scatter(g, ':', 100, 81, 's');
+  rect(g, 0, 0, 52, 2, 'X'); rect(g, 0, 42, 52, 2, 'X');
+  rect(g, 0, 0, 2, 44, 'X'); rect(g, 50, 0, 2, 44, 'X');
+  rect(g, 22, 42, 8, 2, 't');
+  rect(g, 26, 6, 2, 36, 't');
+  rect(g, 14, 16, 24, 8, 't');
+  rect(g, 2, 18, 12, 2, 't');
+  rect(g, 4, 8, 8, 12, 'w');
+  const buildings = [
+    { x: 34, y: 5, w: 12, h: 8, door: { x: 39, y: 12 }, label: 'DOCK OFFICE' },
+    { x: 8, y: 24, w: 10, h: 7, door: { x: 13, y: 30 }, label: 'FISH MARKET' },
+    { x: 36, y: 24, w: 10, h: 7, door: { x: 40, y: 30 }, label: 'STILT INN' },
+  ];
+  for (const b of buildings) rect(g, b.x, b.y, b.w, b.h, 's');
+  return {
+    id: 'tidehaven', name: 'TIDEHAVEN', majorType: 'port_town', biome: 'siltshore',
+    grid: g, ambient: 'day', music: 'town',
+    buildings,
+    portals: [
+      { x: 0, y: 18, w: 2, h: 4, to: 'route_silt_descent', tx: 40, ty: 3 },
+    ],
+    props: [
+      { type: 'shrine', id: 'bell_gate_tidehaven', x: 20, y: 20 },
+      { type: 'stall', x: 12, y: 26 }, { type: 'stall', x: 15, y: 26 },
+      { type: 'fishspot', x: 6, y: 10 },
+      { type: 'bench', x: 18, y: 22 }, { type: 'bench', x: 30, y: 22 },
+      { type: 'lamp', x: 16, y: 16 }, { type: 'lamp', x: 32, y: 16 },
+      { type: 'sign', x: 22, y: 40, text: 'TIDEHAVEN — the tide remembers what you forgot.' },
+      { type: 'sign', x: 4, y: 20, text: 'WEST: King\'s Descent. SOUTH: Drowned Grotto — not yet mapped.' },
+      { type: 'crate', x: 38, y: 8 }, { type: 'barrel', x: 41, y: 9 },
+    ],
+    npcs: [
+      { id: 'marrick_stub', sprite: 'merchant', x: 38, y: 8, dir: 'down', dialog: 'merchant' },
+    ],
+    enemies: [],
+  };
+}
+
 function buildTabbHouse() {
   return interior('tabb_house', "TABB'S HOUSE", 10, 9, 'o', (g, def) => {
     rect(g, 3, 3, 4, 3, 'm');
@@ -580,6 +839,8 @@ export function buildAllMaps() {
     buildTown(), buildElderHouse(), buildInn(), buildShop(), buildSmithy(),
     buildRoute1(), buildCave(), buildBossArena(),
     buildAshfall(), buildTavern(), buildCellar(), buildArmory(), buildArena(), buildTabbHouse(),
+    buildRouteClaim(), buildClaimCave(), buildRouteThornwood(), buildBriarfen(),
+    buildRouteSiltDescent(), buildTidehaven(),
   ]) {
     maps[m.id] = m;
   }
