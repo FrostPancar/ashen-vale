@@ -12,35 +12,26 @@ const SOLID_CHARS = new Set(['#', '^', 'h', 'F', 'w', 'r', '=', 'X', 'C', 'W', '
  * Coordinates are top-left tile of each patch stamp.
  */
 export const MAP_SPRINKLES = {
+  // Lean baselines: lore/quest anchors only. Seasonal flavor comes from
+  // MONTH_SPRINKLES below, keyed by the save's month seed.
   town: {
     patches: [
-      // west lane: witch neighbor, laundry, shared beds
+      // west lane: witch neighbor + shared beds
       { id: 'witchs_stoop', x: 2, y: 8 },
       { id: 'community_garden', x: 3, y: 14 },
-      { id: 'laundry_line', x: 2, y: 18 },
-      // plaza fringe: board + post west of the lamps, snail by the mail
+      // plaza fringe: board + mail west of the lamps
       { id: 'bulletin_board', x: 14, y: 15 },
       { id: 'mail_stop', x: 11, y: 14 },
-      // east lane: patio by the inn, pet corner behind it, coop + herbs south
+      // east lane: patio by the inn, coop behind it, feeder south
       { id: 'patio_stone', x: 35, y: 11 },
-      { id: 'pet_bowl', x: 40, y: 8 },
       { id: 'chicken_coop', x: 39, y: 12 },
-      { id: 'herb_garden', x: 36, y: 16 },
       { id: 'bird_feeder', x: 41, y: 16 },
-      // south: play circle between pond and training yard, mud at the yard gate
+      // south: play circle between pond and training yard
       { id: 'childrens_circle', x: 25, y: 30 },
-      { id: 'boot_scraper', x: 31, y: 33 },
     ],
     extras: [
-      { type: 'snail', x: 17, y: 15, oy: 0 },
-      { type: 'flowerBox', x: 8, y: 12, oy: -2 },
-      { type: 'herbBundle', x: 31, y: 26 },
-      { type: 'logPile', x: 40, y: 21 },
-      { type: 'topiary', x: 3, y: 24 },
-      { type: 'picnicBlanket', x: 15, y: 34, oy: 0 },
-      { type: 'basket', x: 16, y: 34 },
+      // pond life
       { type: 'duck', x: 8, y: 31, oy: -2 },
-      { type: 'lilyPad', x: 6, y: 32, oy: -2 },
       { type: 'reedCluster', x: 12, y: 30, oy: -4 },
     ],
   },
@@ -49,20 +40,12 @@ export const MAP_SPRINKLES = {
       // south stretch: camp before the bridge, shrine at the crossing
       { id: 'caravan_rest', x: 4, y: 46 },
       { id: 'bridge_shrine', x: 7, y: 54 },
-      { id: 'snail_trail', x: 13, y: 47 },
-      // south-east: ambush field props + the oracle heap by the wanderer
-      { id: 'overturned_cart', x: 30, y: 55 },
+      // south-east: the oracle heap by the wanderer, travel shrine
       { id: 'trash_heap', x: 14, y: 62 },
       { id: 'offering_bowl', x: 12, y: 66 },
-      // mid-map: rain pool off the bend, cold camp by the river, spooky field
-      { id: 'rain_pool', x: 24, y: 47 },
+      // mid-map: cold camp by the river bend
       { id: 'campfire_cold', x: 33, y: 46 },
-      { id: 'haunted_lane', x: 5, y: 36 },
-      { id: 'mushroom_ring', x: 4, y: 32 },
-      // north: wire above the ledge, webs near the lever, toll ruin at the gate
-      { id: 'barbed_wire', x: 28, y: 32 },
-      { id: 'hunter_blind', x: 33, y: 28 },
-      { id: 'spider_silk', x: 28, y: 16 },
+      // north: toll ruin at the gate, waymark at the fork
       { id: 'toll_ruin', x: 11, y: 18 },
       { id: 'milestone', x: 16, y: 12 },
     ],
@@ -72,10 +55,7 @@ export const MAP_SPRINKLES = {
       { type: 'chimeStrand', x: 20, y: 35, oy: -2, patchId: 'cliff_vista' },
       // river banks
       { type: 'reedCluster', x: 5, y: 49, oy: -2 },
-      { type: 'reedCluster', x: 33, y: 53, oy: -2 },
-      { type: 'lilyPad', x: 7, y: 51, oy: -2 },
       { type: 'duck', x: 30, y: 51, oy: -4 },
-      { type: 'bootStuck', x: 13, y: 53, oy: 0, patchId: 'marsh_walk' },
     ],
   },
   cave: {
@@ -102,41 +82,30 @@ export const MAP_SPRINKLES = {
   },
   ashfall: {
     patches: [
-      // plaza ring: festival NE corner, books by the tavern lane
-      { id: 'festival_corner', x: 25, y: 13 },
+      // plaza ring: books by the tavern lane
       { id: 'borrowed_stacks', x: 30, y: 14 },
-      { id: 'moth_market', x: 36, y: 12 },
       // market spill east of the plaza, posters outside The Pit
       { id: 'market_spill', x: 24, y: 22 },
       { id: 'pit_chalk', x: 30, y: 20 },
       { id: 'rat_hole', x: 28, y: 31 },
       { id: 'guard_post', x: 15, y: 29 },
-      // garden: quiet bench, bees in the west bed
+      // garden: quiet bench
       { id: 'memorial_bench', x: 10, y: 26 },
-      { id: 'bee_skep', x: 2, y: 24 },
-      // smoke between armory and Tabb's
-      { id: 'chimney_smoke', x: 6, y: 12 },
     ],
     extras: [
       // alley laundry strung between armory and Tabb's
       { type: 'laundryLine', x: 5, y: 15, oy: 0 },
-      { type: 'laundryLine', x: 6, y: 14, ox: 8, oy: 0 },
-      { type: 'basket', x: 7, y: 14 },
       // pond life + Jun's fish rack
-      { type: 'lilyPad', x: 6, y: 27, oy: -2 },
       { type: 'duck', x: 8, y: 27, oy: -2 },
       { type: 'reedCluster', x: 5, y: 26, oy: -4 },
-      { type: 'frog', x: 10, y: 29, oy: 0 },
       { type: 'fishRack', x: 7, y: 31, oy: -2, patchId: 'dock_corner' },
       { type: 'ropeCoil', x: 8, y: 31 },
       // bell shrine approach at the avenue's north end
       { type: 'donationShoes', x: 20, y: 3, oy: 2, patchId: 'shrine_nook' },
       { type: 'candleStick', x: 23, y: 3 },
       { type: 'wishRibbon', x: 24, y: 3, oy: -4 },
-      // Penny's snail club, plaza corner
+      // Penny's snail, plaza corner
       { type: 'snail', x: 26, y: 17, oy: 0 },
-      { type: 'snail', x: 27, y: 17, ox: 6, oy: 2 },
-      { type: 'saltCircle', x: 26, y: 18, oy: 0 },
     ],
   },
   // ---- interiors: indoor-appropriate decor only ----
@@ -215,6 +184,235 @@ export const MAP_SPRINKLES = {
   },
 };
 
+export const MONTH_NAMES = [null,
+  'JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+  'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER',
+];
+
+/** Month seed rolled once at save creation (1..12). */
+export function rollMonth() {
+  return 1 + Math.floor(Math.random() * 12);
+}
+
+/**
+ * Seasonal variation layered on top of the lean baselines, keyed by the
+ * save's month seed (flags.month). Outdoor maps only.
+ */
+export const MONTH_SPRINKLES = {
+  1: { // deep winter: smoke, braziers, lit camps on the road
+    town: {
+      patches: [{ id: 'chimney_smoke', x: 36, y: 16 }, { id: 'rain_barrel', x: 2, y: 18 }],
+      extras: [{ type: 'brazier', x: 17, y: 18 }, { type: 'logPile', x: 40, y: 21 }],
+    },
+    route1: {
+      patches: [{ id: 'ash_drift', x: 6, y: 15 }],
+      extras: [{ type: 'campfireLit', x: 8, y: 47 }, { type: 'logPile', x: 35, y: 47 }],
+    },
+    ashfall: {
+      patches: [{ id: 'chimney_smoke', x: 6, y: 12 }, { id: 'rain_barrel', x: 38, y: 16 }],
+      extras: [{ type: 'brazier', x: 24, y: 33 }],
+    },
+  },
+  2: { // pilgrim month: shrines, candles, ribbons
+    town: {
+      patches: [{ id: 'wayside_shrine', x: 2, y: 18 }],
+      extras: [{ type: 'wishRibbon', x: 36, y: 16, oy: -4 }, { type: 'candleStick', x: 37, y: 17 }],
+    },
+    route1: {
+      patches: [{ id: 'pilgrim_steps', x: 24, y: 47 }],
+      extras: [{ type: 'candleStick', x: 12, y: 56 }, { type: 'wishRibbon', x: 8, y: 55, oy: -4 }],
+    },
+    ashfall: {
+      extras: [
+        { type: 'wishRibbon', x: 19, y: 3, oy: -4 }, { type: 'candleStick', x: 25, y: 4 },
+        { type: 'donationShoes', x: 13, y: 28, oy: 2 },
+      ],
+    },
+  },
+  3: { // thaw: mud, rain pools, wash lines back out
+    town: {
+      patches: [
+        { id: 'boot_scraper', x: 31, y: 33 }, { id: 'laundry_line', x: 2, y: 18 },
+        { id: 'rain_barrel', x: 40, y: 8 },
+      ],
+      extras: [{ type: 'rainBarrel', x: 36, y: 16 }],
+    },
+    route1: {
+      patches: [{ id: 'rain_pool', x: 24, y: 47 }, { id: 'marsh_walk', x: 13, y: 53 }],
+    },
+    ashfall: {
+      patches: [{ id: 'rain_barrel', x: 38, y: 16 }],
+      extras: [{ type: 'laundryLine', x: 6, y: 14, ox: 8, oy: 0 }, { type: 'rainBarrel', x: 5, y: 15 }],
+    },
+  },
+  4: { // vale bloom: bees, pond life, snails at the forks
+    town: {
+      patches: [{ id: 'bee_skep', x: 2, y: 18 }],
+      extras: [
+        { type: 'lilyPad', x: 6, y: 32, oy: -2 }, { type: 'frog', x: 10, y: 33, oy: 0 },
+        { type: 'flowerBox', x: 8, y: 12, oy: -2 },
+      ],
+    },
+    route1: {
+      patches: [{ id: 'snail_trail', x: 13, y: 47 }, { id: 'mushroom_ring', x: 4, y: 32 }],
+      extras: [{ type: 'chimeStrand', x: 15, y: 13, oy: -2 }],
+    },
+    ashfall: {
+      patches: [{ id: 'bee_skep', x: 2, y: 24 }],
+      extras: [
+        { type: 'lilyPad', x: 6, y: 27, oy: -2 }, { type: 'frog', x: 10, y: 29, oy: 0 },
+        { type: 'birdFeeder', x: 12, y: 24 },
+      ],
+    },
+  },
+  5: { // market month: stalls, lantern strings, spice spill
+    town: {
+      patches: [{ id: 'musician_corner', x: 15, y: 16 }, { id: 'cart_overflow', x: 36, y: 16 }],
+      extras: [{ type: 'lanternString', x: 20, y: 14, oy: -16 }],
+    },
+    route1: {
+      extras: [{ type: 'spiceSpill', x: 21, y: 60 }, { type: 'sackPile', x: 12, y: 59 }],
+    },
+    ashfall: {
+      patches: [{ id: 'festival_corner', x: 25, y: 13 }, { id: 'market_stall_row', x: 33, y: 15 }],
+      extras: [{ type: 'lanternString', x: 22, y: 12, oy: -16 }, { type: 'spiceSpill', x: 28, y: 18 }],
+    },
+  },
+  6: { // summer: picnics, lilies, busy banks
+    town: {
+      extras: [
+        { type: 'picnicBlanket', x: 15, y: 34, oy: 0 }, { type: 'basket', x: 16, y: 34 },
+        { type: 'lilyPad', x: 6, y: 32, oy: -2 }, { type: 'duck', x: 9, y: 30, oy: -2 },
+      ],
+    },
+    route1: {
+      patches: [{ id: 'rain_pool', x: 24, y: 47 }],
+      extras: [
+        { type: 'reedCluster', x: 7, y: 49, oy: -2 }, { type: 'lilyPad', x: 7, y: 51, oy: -2 },
+        { type: 'reedCluster', x: 33, y: 53, oy: -2 },
+      ],
+    },
+    ashfall: {
+      extras: [
+        { type: 'lilyPad', x: 6, y: 27, oy: -2 }, { type: 'picnicBlanket', x: 13, y: 28, oy: 0 },
+        { type: 'frog', x: 10, y: 29, oy: 0 },
+      ],
+    },
+  },
+  7: { // heat-dry: sundials, pasture, moths in the alleys
+    town: {
+      patches: [{ id: 'sundial_lawn', x: 2, y: 18 }, { id: 'gazebo', x: 36, y: 15 }],
+      extras: [{ type: 'waterTrough', x: 31, y: 33 }, { type: 'haybale', x: 40, y: 21 }],
+    },
+    route1: {
+      patches: [{ id: 'cloud_pasture', x: 28, y: 32 }],
+      extras: [{ type: 'haybale', x: 30, y: 56 }, { type: 'woolSnag', x: 13, y: 47 }],
+    },
+    ashfall: {
+      patches: [{ id: 'moth_market', x: 36, y: 12 }],
+      extras: [{ type: 'laundryLine', x: 6, y: 14, ox: 8, oy: 0 }, { type: 'mothCage', x: 26, y: 17 }],
+    },
+  },
+  8: { // harvest: pumpkins, yard clutter, ambush dressing
+    town: {
+      patches: [{ id: 'pumpkin_patch', x: 36, y: 16 }],
+      extras: [
+        { type: 'herbRow', x: 2, y: 19, oy: 2 }, { type: 'logPile', x: 40, y: 21 },
+        { type: 'sackPile', x: 31, y: 33 },
+      ],
+    },
+    route1: {
+      patches: [
+        { id: 'overturned_cart', x: 30, y: 55 }, { id: 'hunter_blind', x: 33, y: 28 },
+        { id: 'spider_silk', x: 28, y: 16 },
+      ],
+      extras: [{ type: 'fallenLog', x: 13, y: 47 }],
+    },
+    ashfall: {
+      extras: [
+        { type: 'herbBundle', x: 5, y: 15, oy: -6 }, { type: 'sackPile', x: 38, y: 16 },
+        { type: 'pumpkin', x: 14, y: 28 },
+      ],
+    },
+  },
+  9: { // early autumn: scarecrows, kind graveyards, owl roads
+    town: {
+      patches: [{ id: 'memorial_bench', x: 2, y: 23 }],
+      extras: [
+        { type: 'scarecrow', x: 36, y: 17, oy: -6 }, { type: 'pumpkin', x: 31, y: 33 },
+        { type: 'topiary', x: 3, y: 18 },
+      ],
+    },
+    route1: {
+      patches: [{ id: 'haunted_lane', x: 5, y: 36 }, { id: 'bone_cairn', x: 28, y: 32 }],
+      extras: [{ type: 'owlPerch', x: 33, y: 28, oy: -6 }],
+    },
+    ashfall: {
+      extras: [
+        { type: 'scarecrow', x: 12, y: 28, oy: -6 }, { type: 'topiary', x: 15, y: 26 },
+        { type: 'pumpkin', x: 38, y: 16 },
+      ],
+    },
+  },
+  10: { // festival & folklore: derbies, salt, fen lights
+    town: {
+      patches: [{ id: 'snail_derby', x: 30, y: 32 }],
+      extras: [{ type: 'saltCircle', x: 17, y: 18, oy: 0 }, { type: 'scarecrow', x: 2, y: 19, oy: -6 }],
+    },
+    route1: {
+      patches: [
+        { id: 'mushroom_hollow', x: 4, y: 32 }, { id: 'haunted_lane', x: 5, y: 36 },
+        { id: 'fen_lights', x: 13, y: 53 },
+      ],
+      extras: [{ type: 'owlPerch', x: 28, y: 16, oy: -6 }],
+    },
+    ashfall: {
+      patches: [{ id: 'festival_corner', x: 25, y: 13 }],
+      extras: [
+        { type: 'snail', x: 27, y: 17, ox: 6, oy: 2 }, { type: 'saltCircle', x: 26, y: 18, oy: 0 },
+      ],
+    },
+  },
+  11: { // wet-gray: story fires, compost, marsh waymarks
+    town: {
+      patches: [{ id: 'meeting_stump', x: 36, y: 16 }, { id: 'compost_charm', x: 2, y: 18 }],
+      extras: [{ type: 'rainBarrel', x: 40, y: 8 }],
+    },
+    route1: {
+      patches: [{ id: 'rain_pool', x: 24, y: 47 }, { id: 'marsh_walk', x: 13, y: 53 }],
+      extras: [{ type: 'driftwood', x: 30, y: 53, ox: -4 }, { type: 'campfireLit', x: 8, y: 47 }],
+    },
+    ashfall: {
+      extras: [
+        { type: 'cauldron', x: 5, y: 15 }, { type: 'bulletinBoard', x: 25, y: 13 },
+        { type: 'rainBarrel', x: 38, y: 16 },
+      ],
+    },
+  },
+  12: { // deep-winter festival: lantern strings, bell shards, lit gates
+    town: {
+      patches: [{ id: 'chimney_smoke', x: 36, y: 16 }],
+      extras: [
+        { type: 'lanternString', x: 20, y: 14, oy: -16 }, { type: 'lanternString', x: 25, y: 14, ox: 8, oy: -16 },
+        { type: 'candleStick', x: 34, y: 12 }, { type: 'brazier', x: 20, y: 3 },
+      ],
+    },
+    route1: {
+      patches: [{ id: 'bell_shards', x: 28, y: 16 }],
+      extras: [
+        { type: 'candleStick', x: 16, y: 13 }, { type: 'wishRibbon', x: 18, y: 12, oy: -4 },
+        { type: 'campfireLit', x: 8, y: 47 },
+      ],
+    },
+    ashfall: {
+      extras: [
+        { type: 'lanternString', x: 21, y: 12, oy: -16 }, { type: 'lanternString', x: 22, y: 28, oy: -16 },
+        { type: 'brazier', x: 24, y: 33 }, { type: 'candleStick', x: 19, y: 4 },
+      ],
+    },
+  },
+};
+
 /** Lore / reward text keyed by patch id, then prop type. */
 export const SPRINKLE_LORE = {
   toll_ruin: {
@@ -281,6 +479,26 @@ export const SPRINKLE_LORE = {
     scarecrow: {
       name: 'SCARECROW',
       text: 'It faces the road no matter where you stand. You checked twice. You will not check a third time.',
+    },
+    offeringBowl: { hp: 6, flag: 'offering_haunted' },
+  },
+  pilgrim_steps: {
+    donationShoes: { hp: 8, flag: 'offering_pilgrim' },
+    statueSmall: {
+      name: 'WAYSTONE',
+      text: 'Pilgrims pass this way each thaw-end. Their candles outlast their footprints.',
+    },
+  },
+  snail_derby: {
+    sign: {
+      name: 'DERBY RULES',
+      text: 'ANNUAL SNAIL DERBY — no salt, no shoving, no betting against Penny. Finish line: eventually.',
+    },
+  },
+  wayside_shrine: {
+    candleStick: {
+      name: 'CANDLE',
+      text: 'Someone relights it every dusk. No one has ever seen who.',
     },
   },
   trash_heap: {
@@ -487,15 +705,17 @@ export function validateStamp(world, ox, oy, patchDef) {
  * @param {object} flags
  */
 export function applyMapSprinkles(world, mapId, flags) {
-  const plan = MAP_SPRINKLES[mapId];
-  if (!plan) return;
-
-  for (const p of plan.patches || []) {
-    const def = PATCH_BY_ID[p.id];
-    if (def) world.stampPatch(def, p.x, p.y, p.id);
-  }
-  for (const e of plan.extras || []) {
-    world.spawnDecor(e, flags);
+  const month = flags?.month;
+  const plans = [MAP_SPRINKLES[mapId], MONTH_SPRINKLES[month]?.[mapId]];
+  for (const plan of plans) {
+    if (!plan) continue;
+    for (const p of plan.patches || []) {
+      const def = PATCH_BY_ID[p.id];
+      if (def) world.stampPatch(def, p.x, p.y, p.id);
+    }
+    for (const e of plan.extras || []) {
+      world.spawnDecor(e, flags);
+    }
   }
 }
 

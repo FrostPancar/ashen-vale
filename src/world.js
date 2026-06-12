@@ -297,7 +297,8 @@ export class World {
     const scale = tall ? 0.028 : 0.022;
     for (let i = 0; i < spots.length; i++) {
       const [ox, oz] = spots[i];
-      const canvas = sprites[(hsh + i * 5) % sprites.length];
+      // tileHash can be negative; keep the sprite index in range
+      const canvas = sprites[(((hsh + i * 5) % sprites.length) + sprites.length) % sprites.length];
       const bh = canvas.height * scale;
       const bw = canvas.width * scale;
       for (const rot of [0, Math.PI / 2]) {
@@ -317,7 +318,7 @@ export class World {
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const ch = d[y * w + x];
       if (ch === ',') this._spawnGrassTuftsAt(x, y, w, h, true);
-      else if ((ch === '.' || ch === ':') && (tileHash(x, y) & 7) === 0) {
+      else if ((ch === '.' || ch === ':') && (tileHash(x, y) & 15) === 0) {
         this._spawnGrassTuftsAt(x, y, w, h, false);
       }
     }

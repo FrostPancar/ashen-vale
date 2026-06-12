@@ -68,7 +68,7 @@ function buildTown() {
   rect(g, 0, 0, 46, 2, '#'); rect(g, 0, 36, 46, 2, '#');
   rect(g, 0, 0, 2, 38, '#'); rect(g, 44, 0, 2, 38, '#');
   scatter(g, '#', 22, 9, '.:');
-  scatter(g, 'f', 26, 15, '.:');
+  scatter(g, 'f', 14, 15, '.:');
   // north exit gap (to route1) at x=21..24
   rect(g, 21, 0, 4, 2, 'p');
   // plaza + paths
@@ -232,7 +232,7 @@ function buildRoute1() {
   rect(g, 0, 70, 40, 2, '#');
   scatter(g, '#', 80, 11, '.:');
   scatter(g, '^', 30, 12, '.:');
-  scatter(g, 'f', 30, 17, '.:');
+  scatter(g, 'f', 16, 17, '.:');
   // south entrance from town x=19..22
   rect(g, 19, 70, 4, 2, 'p');
   // one continuous road: town gate → bridge → bend east → north through the

@@ -36,6 +36,7 @@ export function bossSummonCount(net) {
 /** Puzzle / world flags the host shares with joiners. */
 export function collectShareableFlags(flags) {
   const out = { stage: flags.stage || 0 };
+  if (flags.month) out.month = flags.month;
   const puzzleKeys = ['route_lever', 'cave_leverA', 'cave_leverB', 'cave_door', 'warden_dead'];
   for (const k of puzzleKeys) {
     if (flags[k]) out[k] = flags[k];

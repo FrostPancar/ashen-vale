@@ -20,7 +20,7 @@ import {
   partyScale as calcPartyScale, enemyDamage, bossEnrageSpeed, bossSummonCount,
   collectShareableFlags,
 } from './coop.js';
-import { SPRINKLE_LORE } from './worldSprinkles.js';
+import { SPRINKLE_LORE, MONTH_NAMES, rollMonth } from './worldSprinkles.js';
 import { findActivePortal } from './portalIndicators.js';
 
 const $ = (s) => document.querySelector(s);
@@ -211,6 +211,8 @@ class Game {
       p.recalcStats();
       p.hp = p.stats.maxHp; p.mp = p.stats.maxMp;
     }
+    // month seed: rolled once per save (older saves roll on first load)
+    if (!this.flags.month) this.flags.month = rollMonth();
     applyTreeStats(this.player);
     this.scene.add(this.player.sprite.group);
 
@@ -240,6 +242,7 @@ class Game {
         { name: '???', text: 'The bell of Eldermoor rings for the first time in years... and you wake at the fountain, road-dust still on your boots.' },
         { name: '???', text: 'Find ELDER MAREN. Her hall stands west of the plaza. (Move with WASD. Talk with E. Attack with LEFT CLICK.)' },
       ]);
+      this.toast(`The vale settles into ${MONTH_NAMES[this.flags.month]}`);
     }
     this.player.revivesLeft = 2;
     this.running = true;
@@ -2059,6 +2062,15 @@ class Game {
     for (const [k, v] of Object.entries(flags)) {
       if (k === 'stage') {
         if ((v || 0) > (this.flags.stage || 0)) { this.flags.stage = v; changed = true; }
+        continue;
+      }
+      if (k === 'month') {
+        // guests adopt the host's month seed (flags only ever flow host -> guests)
+        if (v && v !== this.flags.month) {
+          this.flags.month = v;
+          changed = true;
+          this.toast(`The host's vale is deep in ${MONTH_NAMES[v]}`);
+        }
         continue;
       }
       if (k.startsWith('boulder_')) {

@@ -101,7 +101,7 @@ export class UI {
     const k = CLASSES[player.klass];
     const slots = document.querySelectorAll('#hotbar .slot');
     const order = [k.basic, k.skills[0], k.skills[1], k.mobility];
-    order.forEach((s, i) => blitTo(slots[i].querySelector('canvas'), Art.icons[s.icon]));
+    order.forEach((s, i) => blitTo(slots[i].querySelector('canvas'), Art.icon(s.icon)));
     blitTo(slots[4].querySelector('canvas'), Art.icons.potion);
   }
 
@@ -454,7 +454,7 @@ export class UI {
     const el = document.createElement('button');
     el.className = `tnode ${tierCls} st-${st}` + (this._selNode === node.id ? ' sel' : '');
     const c = document.createElement('canvas');
-    c.width = 32; c.height = 32; blitTo(c, Art.icons[node.icon] || Art.icons[lane.icon]);
+    c.width = 32; c.height = 32; blitTo(c, Art.icon(node.icon) || Art.icon(lane.icon));
     const name = document.createElement('span');
     name.className = 'tn-name';
     name.textContent = node.name;
@@ -517,7 +517,7 @@ export class UI {
       const card = document.createElement('button');
       card.className = `lu-choice tier-${node.tier}`;
       const cv = document.createElement('canvas');
-      cv.width = 40; cv.height = 40; blitTo(cv, Art.icons[node.icon] || Art.icons[lane.icon]);
+      cv.width = 40; cv.height = 40; blitTo(cv, Art.icon(node.icon) || Art.icon(lane.icon));
       const info = document.createElement('div');
       info.className = 'lu-info';
       info.innerHTML = `<div class="lu-lane">${lane.name} · ${tier}</div><div class="lu-name">${node.name}</div><div class="lu-desc">${node.desc}</div>`;
