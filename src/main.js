@@ -15,7 +15,7 @@ import { DIALOGS, QUEST_TEXT } from './quests.js';
 import { UI } from './ui.js';
 import { SFX, playMusic, stopMusic, initAudio } from './audio.js';
 import { Net } from './net.js';
-import { migrateLegacySave, loadSlot, writeSlot, SAVE_SLOTS } from './save.js';
+import { migrateLegacySave, loadSlot, writeSlot, clearSlot, SAVE_SLOTS } from './save.js';
 import {
   partyScale as calcPartyScale, enemyDamage, bossEnrageSpeed, bossSummonCount,
   collectShareableFlags,
@@ -2583,6 +2583,7 @@ function setupTitle() {
   let chosen = null;
   let selectedSlot = null;
   let coopOpen = false;
+  let deletePending = false;
   const slotSaves = Array.from({ length: SAVE_SLOTS }, (_, i) => loadSlot(i));
 
   const hint = $('#title-slot-hint');
@@ -2591,9 +2592,16 @@ function setupTitle() {
   const heroPanel = $('#hero-panel');
   const soloBtn = $('#btn-solo');
   const coopBtn = $('#btn-coop');
+  const deleteBtn = $('#btn-delete-save');
   const coopPanel = $('#title-coop-panel');
   const coopStartBtn = $('#btn-coop-start');
   const titleControls = $('#title-controls');
+
+  function resetDeleteConfirm() {
+    deletePending = false;
+    deleteBtn.textContent = 'DELETE SAVE';
+    deleteBtn.classList.remove('confirm');
+  }
 
   function refreshSlots() {
     document.querySelectorAll('.save-slot').forEach((btn, i) => {
@@ -2664,6 +2672,9 @@ function setupTitle() {
     coopPanel.classList.toggle('hidden', !coopOpen);
     coopBtn.classList.toggle('active', coopOpen);
     coopStartBtn.textContent = save ? 'CONTINUE CO-OP' : 'JOIN ROOM';
+
+    deleteBtn.classList.toggle('hidden', !save);
+    if (!save) resetDeleteConfirm();
   }
 
   document.querySelectorAll('.save-slot').forEach(btn => {
@@ -2673,9 +2684,29 @@ function setupTitle() {
       if (save) chosen = save.klass;
       else chosen = null;
       coopOpen = false;
+      resetDeleteConfirm();
       updateTitleActions();
       initAudio(); SFX.ui();
     });
+  });
+
+  deleteBtn.addEventListener('click', () => {
+    if (selectedSlot == null || !slotSaves[selectedSlot]) return;
+    if (!deletePending) {
+      deletePending = true;
+      deleteBtn.textContent = 'CONFIRM DELETE';
+      deleteBtn.classList.add('confirm');
+      initAudio(); SFX.ui();
+      return;
+    }
+    clearSlot(selectedSlot);
+    slotSaves[selectedSlot] = null;
+    chosen = null;
+    coopOpen = false;
+    resetDeleteConfirm();
+    updateTitleActions();
+    hint.textContent = `Slot ${selectedSlot + 1} cleared · pick a class`;
+    initAudio(); SFX.ui();
   });
 
   document.querySelectorAll('.class-card').forEach(card => {

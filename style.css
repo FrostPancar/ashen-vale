@@ -396,17 +396,37 @@ kbd { font-family: var(--font); background: var(--c1); color: var(--c3); border:
 #title-slot-hint { font-size: 12px; color: var(--text-muted); letter-spacing: 0.8px; min-height: 16px; }
 #class-select { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; }
 .class-card { width: 190px; border: 2px solid var(--c1); padding: 14px 12px 12px; text-align: center; cursor: pointer;
-  background: rgba(var(--c0-rgb), .55); transition: transform .1s, border-color .1s; }
+  background: rgba(var(--c0-rgb), .55); transition: transform .1s, border-color .1s, box-shadow .3s ease, background .3s ease; }
 .class-card:hover { transform: translateY(-4px); border-color: var(--c2); }
 .class-card.selected { border-color: var(--c3); box-shadow: 0 0 16px rgba(var(--c3-rgb), .22); background: rgba(var(--c0-rgb), .72); }
 .class-card canvas { width: 84px; height: 84px; }
 .class-card h3 { letter-spacing: 3px; margin: 8px 0 6px; color: var(--c3); }
-.class-card p { font-size: 12px; color: var(--c2); line-height: 1.55; min-height: 48px; display: none; }
-.class-card .card-keys { margin-top: 8px; font-size: 11px; color: var(--text-muted); letter-spacing: 0.8px; border-top: 1px solid var(--c1);
-  padding-top: 6px; display: none; }
-.class-card:hover p, .class-card.selected p,
-.class-card:hover .card-keys, .class-card.selected .card-keys { display: block; }
+.class-card p {
+  font-size: 12px; color: var(--c2); line-height: 1.55; margin: 0;
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height .42s cubic-bezier(.22, 1, .36, 1), opacity .32s ease .04s;
+}
+.class-card .card-keys {
+  margin-top: 0; font-size: 11px; color: var(--text-muted); letter-spacing: 0.8px;
+  border-top: 1px solid transparent; padding-top: 0;
+  max-height: 0; opacity: 0; overflow: hidden;
+  transition: max-height .42s cubic-bezier(.22, 1, .36, 1), opacity .32s ease .08s,
+    margin-top .32s ease, padding-top .32s ease, border-color .32s ease;
+}
+.class-card:hover p, .class-card.selected p { max-height: 72px; opacity: 1; }
+.class-card:hover .card-keys, .class-card.selected .card-keys {
+  max-height: 48px; opacity: 1; margin-top: 8px; padding-top: 6px; border-top-color: var(--c1);
+}
 .class-card.selected .card-keys { color: var(--c2); }
+#btn-delete-save {
+  font-family: var(--font); font-size: 12px; letter-spacing: 1.5px;
+  background: transparent; color: var(--text-muted); border: 1px solid var(--c1);
+  padding: 6px 14px; cursor: pointer;
+  transition: color .12s, border-color .12s, background .12s;
+}
+#btn-delete-save:hover { color: #e88; border-color: #a55; }
+#btn-delete-save.confirm { color: #f88; border-color: #c44; background: rgba(180, 40, 40, .14); }
+#btn-delete-save.hidden { display: none; }
 
 #title-coop { display: none; }
 
