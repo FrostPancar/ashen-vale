@@ -2,7 +2,7 @@
 import { Art, blitTo } from './art.js';
 import { RARITIES, itemStatDelta, formatStatDeltaHtml } from './items.js';
 import { CLASSES, SKILL_MAX, skillRankLabel, skillNextDesc } from './skills.js';
-import { treeLanes, nodeState, unlockNode, applyTreeStats } from './skilltree.js';
+import { treeLanes, nodeState, nodeOwned, unlockNode, applyTreeStats } from './skilltree.js';
 import { QUEST_TEXT } from './quests.js';
 import { SFX } from './audio.js';
 
@@ -259,6 +259,10 @@ export class UI {
     else this.renderSkills();
   }
 
+  refreshInventoryIfOpen() {
+    if (this.panelOpen && this._tab === 'inventory') this.renderInventory();
+  }
+
   itemCell(item, onClick, actionText, compareTo = null) {
     const div = document.createElement('div');
     div.className = `item-cell ${item ? RARITIES[item.rarity].cls : ''}`;
@@ -363,11 +367,11 @@ export class UI {
       const track = document.createElement('div');
       track.className = 'tl-track';
       const [base, emp, pA, pB, syn] = lane.nodes;
-      track.append(this.nodeEl(p, lane, base), this.connEl(), this.nodeEl(p, lane, emp), this.connEl('fork'));
+      track.append(this.nodeEl(p, lane, base), this.connEl(nodeOwned(p, base.id)), this.nodeEl(p, lane, emp), this.connEl('fork', nodeOwned(p, emp.id)));
       const fork = document.createElement('div');
       fork.className = 'tl-fork';
       fork.append(this.nodeEl(p, lane, pA), this.nodeEl(p, lane, pB));
-      track.append(fork, this.connEl(), this.nodeEl(p, lane, syn));
+      track.append(fork, this.connEl(nodeOwned(p, pA.id) || nodeOwned(p, pB.id)), this.nodeEl(p, lane, syn));
       row.append(head, track);
       tree.appendChild(row);
     }
@@ -383,14 +387,21 @@ export class UI {
     const name = document.createElement('span');
     name.className = 'tn-name';
     name.textContent = node.name;
-    el.append(c, name);
+    const badge = document.createElement('span');
+    badge.className = 'tn-badge';
+    if (st === 'owned') badge.textContent = '✓';
+    else if (st === 'available' && p.skillPoints > 0) badge.textContent = 'READY';
+    else if (st === 'available') badge.textContent = 'OPEN';
+    else if (st === 'blocked') badge.textContent = '—';
+    else badge.textContent = 'LOCK';
+    el.append(c, name, badge);
     if (st === 'available' && p.skillPoints > 0) el.classList.add('can-buy');
     el.addEventListener('click', () => this.selectNode(p, lane, node));
     return el;
   }
-  connEl(kind) {
+  connEl(kind, lit = false) {
     const d = document.createElement('div');
-    d.className = 'tl-conn' + (kind ? ' ' + kind : '');
+    d.className = 'tl-conn' + (kind ? ' ' + kind : '') + (lit ? ' lit' : '');
     return d;
   }
 
@@ -528,6 +539,7 @@ export class UI {
     SFX.coin();
     this.game.toast(entry.kind === 'potion' ? '+1 Vale Tonic' : `Bought ${entry.item.name}`);
     this.renderShop();
+    this.refreshInventoryIfOpen();
     this.game.save();
   }
   closeShop() {

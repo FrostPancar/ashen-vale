@@ -403,8 +403,11 @@ export class World {
   }
 
   _sprinkleGlow(type) {
-    if (type === 'charm') return 0.38;
-    if (type === 'lamp') return 0.22;
+    if (type === 'charm') return 0.42;
+    if (type === 'lamp') return 0.28;
+    if (type === 'lanternPost' || type === 'lanternString') return 0.26;
+    if (type === 'campfireLit' || type === 'campfireRing' || type === 'brazier') return 0.34;
+    if (type === 'crystalCluster' || type === 'offeringBowl') return 0.22;
     return 0;
   }
 
@@ -498,10 +501,9 @@ export class World {
       this.scene.fog = new THREE.FogExp2(new THREE.Color('#525452'), 0.10);
       this.scene.background = new THREE.Color('#484a48');
     } else if (amb === 'interior') {
-      this.group.add(new THREE.AmbientLight(PAL[2], 0.85));
-      const warm = new THREE.PointLight(PAL[3], 8, 12, 1.2);
-      warm.position.set(w / 2, 2.4, h / 2);
-      this.group.add(warm);
+      // Baked interior fill — no map-wide PointLight; warmth comes from prop emissive + halos.
+      this.group.add(new THREE.HemisphereLight(PAL[3], PAL[0], 0.55));
+      this.group.add(new THREE.AmbientLight(PAL[2], 0.72));
       this.playerLight = null;
       this.scene.fog = new THREE.Fog(new THREE.Color(PAL[0]), 14, 30);
       this.scene.background = new THREE.Color(PAL[0]);

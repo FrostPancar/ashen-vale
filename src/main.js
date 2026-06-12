@@ -7,7 +7,7 @@ import {
   Player, Enemy, Npc, RemotePlayer, Projectile, Drop, ENEMY_TYPES, dirToVec, makeLabel,
 } from './entities.js';
 import { Effects } from './fx.js';
-import { CLASSES, classSkillList, skillDamage, xpForLevel } from './skills.js';
+import { CLASSES, classSkillList, skillDamage, skillDefFor, xpForLevel } from './skills.js';
 import { buildCast, playerFx, applyTreeStats, unlockNode, levelUpChoices, treeNode } from './skilltree.js';
 import { PhysObj, PHYS_TYPES } from './physics.js';
 import { generateItem, shopStock, smithStock, armoryStock, resolveLootSpec, rollEnemyLoot, canEquipWeapon, itemStatDelta, formatStatDelta, getEquippedPassives } from './items.js';
@@ -62,6 +62,7 @@ class Game {
     this.reviveChannel = null;
     this.reviveT = 0;
     this.nextDropId = 1;
+    this.wardenDamagers = null; // Set<number> of net ids who damaged the Warden this fight
   }
 
   partyEnrageSpeed() { return bossEnrageSpeed(this.net); }
@@ -88,12 +89,47 @@ class Game {
   }
 
   openChest(pr) {
+    if (pr.id === 'boss_chest') {
+      this.openBossVault(pr);
+      return;
+    }
     if (this.flags[`opened_${pr.id}`] || pr.opened) return;
     this.openChestVisual(pr);
     SFX.chest();
     this.fx.chestOpen(new THREE.Vector3(pr.x + 0.5, 0, pr.y + 0.5));
-    this.giveLoot(pr.loot, pr);
+    this.giveLoot(pr.loot, pr, { direct: true });
     if (this.net.connected) this.net.sendEvent('chestOpen', { id: pr.id });
+    this.save();
+  }
+
+  canClaimWardenVault() {
+    if (!this.net.connected) return true;
+    if (!this.wardenDamagers || this.wardenDamagers.size === 0) return true;
+    return this.wardenDamagers.has(this.net.id);
+  }
+
+  openBossVault(pr) {
+    if (!this.flags.warden_dead) return;
+    if (this.flags.boss_chest_claimed) {
+      SFX.deny();
+      this.toast('You already claimed your vault reward');
+      return;
+    }
+    if (!this.canClaimWardenVault()) {
+      SFX.deny();
+      this.toast('Only those who fought the Warden may claim the vault');
+      return;
+    }
+    const firstVisual = !this.flags[`opened_${pr.id}`] && !pr.opened;
+    if (firstVisual) {
+      this.openChestVisual(pr);
+      if (this.net.connected) this.net.sendEvent('chestOpen', { id: pr.id });
+    }
+    SFX.chest();
+    if (firstVisual) this.fx.chestOpen(new THREE.Vector3(pr.x + 0.5, 0, pr.y + 0.5));
+    this.giveLoot(pr.loot, pr, { direct: true });
+    this.flags.boss_chest_claimed = true;
+    this.toast('Vault reward claimed — class trophy is yours', true);
     this.save();
   }
 
@@ -182,9 +218,13 @@ class Game {
       this.ui.setCoopStatus({ line: 'connecting to coop server...' });
       const url = coop.url || undefined;
       const ok = await this.net.connect(coop.room, coop.name, klass, url);
-      this.ui.setCoopStatus(ok
-        ? this.net.coopStatusLine()
-        : { line: 'co-op unavailable (server offline or room full) — playing solo', worldNote: '' });
+      if (ok) {
+        this.ui.setCoopStatus(this.net.coopStatusLine());
+        this.announceCoopJoin();
+      } else {
+        this.ui.setCoopStatus({ line: 'co-op unavailable (server offline or room full) — playing solo', worldNote: '' });
+        this.toast('Could not join co-op — continuing solo');
+      }
     } else {
       this.ui.setCoopStatus(null);
     }
@@ -255,6 +295,7 @@ class Game {
       this.scene.add(e.sprite.group);
       this.enemies.push(e);
     }
+    if (id === 'boss' && !this.flags.warden_dead) this.wardenDamagers = null;
     // boss chest reveal if already earned
     if (id === 'boss' && this.flags.warden_dead) this.revealBossChest();
 
@@ -615,6 +656,10 @@ class Game {
     for (const pr of this.world.props) {
       const d = Math.hypot(pr.x + 0.5 - p.pos.x, pr.y + 0.5 - p.pos.z);
       if (pr.type === 'sign' && d < 1.2) return { label: 'READ' };
+      if (pr.type === 'chest' && pr.id === 'boss_chest' && d < 1.2 && this.flags.warden_dead) {
+        if (!this.flags.boss_chest_claimed && this.canClaimWardenVault()) return { label: 'CLAIM VAULT' };
+        return null;
+      }
       if (pr.type === 'chest' && d < 1.2 && !pr.opened && !this.flags[`opened_${pr.id}`]) return { label: 'OPEN' };
       if (pr.type === 'lever' && d < 1.2 && !pr.on) return { label: 'PULL' };
       if (pr.type === 'boulder' && pr.tx === Math.floor(fx) && pr.ty === Math.floor(fz)) return { label: 'PUSH' };
@@ -787,6 +832,10 @@ class Game {
         this.ui.startDialog([{ name: 'SIGN', text: pr.text }]);
         return;
       }
+      if (pr.type === 'chest' && pr.id === 'boss_chest' && d < 1.2 && this.flags.warden_dead) {
+        this.openBossVault(pr);
+        return;
+      }
       if (pr.type === 'chest' && d < 1.2 && !pr.opened && !this.flags[`opened_${pr.id}`]) {
         this.openChest(pr);
         return;
@@ -935,19 +984,42 @@ class Game {
     else if (kind === 'armory') this.ui.openShop('ASHFALL ARMORY', armoryStock(klass, lvl));
   }
 
-  giveLoot(spec, srcProp) {
+  giveLoot(spec, srcProp, opts = {}) {
     const p = this.player;
     const pos = srcProp ? new THREE.Vector3(srcProp.x + 0.5, 0, srcProp.y + 1.4) : p.pos.clone();
     const drops = resolveLootSpec(spec, p);
+    const direct = !!opts.direct;
     if (!drops.length) {
-      // legacy fallback: gold:N / potion:N / item:rarity
       const [kind, val] = spec.split(':');
-      if (kind === 'gold') this.spawnDrop('gold', +val, pos);
+      if (direct) this.grantDrop(kind, kind === 'potion' ? +val : kind === 'gold' ? +val : generateItem({ rarity: val, level: p.level, klass: p.klass, classAffix: true }));
+      else if (kind === 'gold') this.spawnDrop('gold', +val, pos);
       else if (kind === 'potion') { for (let i = 0; i < +val; i++) this.spawnDrop('potion', 1, pos); }
       else if (kind === 'item') this.spawnDrop('item', generateItem({ rarity: val, level: p.level, klass: p.klass, classAffix: true }), pos);
       return;
     }
-    for (const d of drops) this.spawnDrop(d.kind, d.data, pos);
+    for (const d of drops) {
+      if (direct) this.grantDrop(d.kind, d.data);
+      else this.spawnDrop(d.kind, d.data, pos);
+    }
+  }
+
+  grantDrop(kind, data) {
+    const p = this.player;
+    if (kind === 'gold') {
+      p.gold += data;
+      SFX.coin();
+      this.toast(`+${data} gold`);
+    } else if (kind === 'potion') {
+      p.potions += data;
+      SFX.pickup();
+      this.toast(data > 1 ? `+${data} Vale Tonics` : '+1 Vale Tonic');
+    } else {
+      p.inventory.push(data);
+      SFX.pickupRarity(data.rarity);
+      const r = data.rarity;
+      this.toast(`${r === 'legendary' ? '★ ' : ''}${data.name} [${r}]`, r === 'rare' || r === 'legendary');
+    }
+    this.ui.refreshInventoryIfOpen();
   }
 
   spawnDrop(kind, data, pos, opts = {}) {
@@ -982,6 +1054,112 @@ class Game {
     return { x: dx / len, z: dz / len };
   }
 
+  combatFxPayload(sk, aim) {
+    const p = this.player;
+    const [fdx, fdz] = aim ? [aim.x, aim.z] : dirToVec(p.dir);
+    return {
+      kind: sk.id,
+      x: +p.pos.x.toFixed(2),
+      z: +p.pos.z.toFixed(2),
+      dx: +fdx.toFixed(3),
+      dz: +fdz.toFixed(3),
+      map: this.mapId,
+      lv: p.skillLevels[sk.id] || 1,
+    };
+  }
+
+  playRemoteCombatFx(msg) {
+    if (msg.map !== this.mapId) return;
+    const rp = this.remotes.get(msg.from);
+    if (rp) {
+      rp.attackT = 0.25;
+      const dx = msg.dx ?? 0, dz = msg.dz ?? 0;
+      if (Math.hypot(dx, dz) > 0.05) {
+        rp.dir = Math.abs(dx) > Math.abs(dz) ? (dx > 0 ? 'right' : 'left') : (dz > 0 ? 'down' : 'up');
+      }
+    }
+    const sk = skillDefFor(rp?.klass, msg.kind);
+    if (!sk) {
+      this.fx.skillSpawn(new THREE.Vector3(msg.x, 0, msg.z));
+      return;
+    }
+    const pos = new THREE.Vector3(msg.x, 0, msg.z);
+    const lv = msg.lv || 1;
+    const fdx = msg.dx ?? 0, fdz = msg.dz ?? 1;
+    const spawnRemoteProj = (vel, life, opts = {}) => {
+      const pr = new Projectile('remote', pos.clone(), vel, 0, life, { ...opts, cosmetic: true });
+      this.scene.add(pr.mesh);
+      this.projectiles.push(pr);
+    };
+    switch (sk.type) {
+      case 'melee': {
+        SFX.swing();
+        const range = sk.range + (lv - 1) * 0.06;
+        this.fx.slash(pos, Math.atan2(fdz, fdx), range, sk.arc);
+        this.fx.skillSpawn(pos);
+        break;
+      }
+      case 'spin': {
+        SFX.swing();
+        const range = sk.range + (lv - 1) * 0.1;
+        this.fx.ring(pos, range, 0.3);
+        this.fx.skillSpawn(pos);
+        break;
+      }
+      case 'proj': {
+        sk.id === 'spark' || sk.id === 'bolt' ? SFX.spark() : SFX.shoot();
+        const vel = new THREE.Vector3(fdx, 0, fdz).multiplyScalar(sk.speed);
+        spawnRemoteProj(vel, sk.life + (lv - 1) * 0.1, {
+          pierce: sk.pierce, kind: sk.projKind, big: sk.big,
+        });
+        this.fx.skillSpawn(pos);
+        break;
+      }
+      case 'fan': {
+        SFX.shoot();
+        const n = sk.count + (lv - 1);
+        const spread = 0.22;
+        const base = Math.atan2(fdz, fdx);
+        for (let i = 0; i < n; i++) {
+          const a = base + (i - (n - 1) / 2) * spread;
+          const vel = new THREE.Vector3(Math.cos(a), 0, Math.sin(a)).multiplyScalar(sk.speed);
+          spawnRemoteProj(vel, sk.life, { kind: sk.projKind, big: sk.big });
+        }
+        this.fx.skillSpawn(pos);
+        break;
+      }
+      case 'nova': {
+        SFX.spark();
+        this.fx.shockwave(pos, sk.range + (lv - 1) * 0.25);
+        break;
+      }
+      case 'dash': {
+        SFX.blink();
+        this.fx.particles(pos, 6, 1.5);
+        this.fx.addFlash(pos, 5, 3, 0.2);
+        this.schedule(0.14, () => {
+          const end = rp?.target || pos.clone().add(new THREE.Vector3(fdx, 0, fdz).multiplyScalar(sk.dist + (lv - 1) * 0.4));
+          this.fx.particles(end, 4, 1.2);
+          this.fx.addFlash(end, 3, 2, 0.12);
+        });
+        break;
+      }
+      case 'blink': {
+        SFX.blink();
+        this.fx.particles(pos, 8, 1.5);
+        this.fx.addFlash(pos, 4, 2.5, 0.15);
+        this.schedule(0.1, () => {
+          const end = rp?.target || pos.clone().add(new THREE.Vector3(fdx, 0, fdz).multiplyScalar(sk.dist + (lv - 1) * 0.5));
+          this.fx.particles(end, 8, 1.5);
+          this.fx.addFlash(end, 5, 3, 0.18);
+        });
+        break;
+      }
+      default:
+        this.fx.skillSpawn(pos);
+    }
+  }
+
   tryBasic(aim) {
     const p = this.player;
     const k = CLASSES[p.klass];
@@ -989,7 +1167,6 @@ class Game {
     if ((p.cooldowns[sk.id] || 0) > 0 || this.uiLock || p.ragdoll) return;
     p.cooldowns[sk.id] = sk.cd * p.cdScale();
     p.attackAnim = 0.18;
-    if (this.net.connected) this.net.sendEvent('combatFx', { kind: 'basic' });
     // consume empower flags: rush_empower / tumble_empower give +60% dmg on the next basic
     if (p.rushEmpowered || p.tumbleEmpowered) {
       p.rushEmpowered = false;
@@ -1026,7 +1203,6 @@ class Game {
     if (usingCharge) p.mobCharges--;
     else p.cooldowns[sk.id] = sk.cd * p.cdScale();
     p.attackAnim = 0.22;
-    if (this.net.connected) this.net.sendEvent('combatFx', { kind: sk.id || 'skill' });
     // Bladedancer: casting spends Resolve to refund cooldown on your other skills
     if (p._bladedancer && p.resolve > 0) {
       const refund = p.resolve * 0.4;
@@ -1043,6 +1219,7 @@ class Game {
 
   executeSkill(sk, lv, aim) {
     const p = this.player;
+    if (this.net.connected) this.net.sendEvent('combatFx', this.combatFxPayload(sk, aim));
     const passives = getEquippedPassives(p.equip);
     const dmg = skillDamage(p, sk, lv);
     const [fdx, fdz] = aim ? [aim.x, aim.z] : dirToVec(p.dir);
@@ -1551,6 +1728,9 @@ class Game {
   onBossDead(enemy) {
     this.flags.warden_dead = true;
     this.flags.cave_door = this.flags.cave_door || true;
+    const damagers = [...(enemy.damagers || [])];
+    if (this.net.connected && !damagers.includes(this.net.id)) damagers.push(this.net.id);
+    this.wardenDamagers = new Set(damagers);
     SFX.bossRoar();
     this.shake(1);
     this.ui.setBossBar(null);
@@ -1558,7 +1738,7 @@ class Game {
     this.setStage(5);
     this.revealBossChest();
     playMusic('cave');
-    this.net.sendEvent('wardenDead', {});
+    this.net.sendEvent('wardenDead', { damagers });
     this.save();
   }
 
@@ -1797,6 +1977,36 @@ class Game {
   }
 
   /* ============ coop glue ============ */
+  onBecomeHost() {
+    this.lastEnemySyncAt = -10;
+    this.ui.setCoopStatus(this.net.coopStatusLine());
+    this.toast('You are now the host — world gates & enemies follow you', true);
+    if (this.net.connected) {
+      this.net.send({ t: 'flags', flags: this.shareableFlags() });
+    }
+    if (this.flags.warden_dead) this.revealBossChest();
+    if (this.mapId === 'boss' && this.flags.warden_dead) playMusic('cave');
+  }
+
+  announceCoopJoin() {
+    if (!this.net.connected) return;
+    if (this.net.isHost) {
+      this.toast('CO-OP HOST — allies warp to you; world gates follow your quest stage', true);
+      window.setTimeout(() => {
+        if (this.net.connected && this.net.isHost) {
+          this.toast('Each player keeps their own level, loot, gold & side quests');
+        }
+      }, 3500);
+    } else {
+      this.toast('CO-OP GUEST — world gates & puzzles follow the host', true);
+      window.setTimeout(() => {
+        if (this.net.connected && !this.net.isHost) {
+          this.toast('You keep your save — level, gear, gold & personal quests stay yours');
+        }
+      }, 3500);
+    }
+  }
+
   onNetReady() {
     if (this.net.isHost && this.net.peers.size > 0) {
       this.net.sendEvent('hostAnchor', {
@@ -1819,9 +2029,19 @@ class Game {
         if ((v || 0) > (this.flags.stage || 0)) { this.flags.stage = v; changed = true; }
         continue;
       }
+      if (k.startsWith('boulder_')) {
+        if (JSON.stringify(this.flags[k]) !== JSON.stringify(v)) {
+          this.flags[k] = v;
+          changed = true;
+        }
+        continue;
+      }
       if (v && !this.flags[k]) { this.flags[k] = v; changed = true; }
     }
-    if (changed && this.mapId) this.loadMap(this.mapId, this.player.pos.x, this.player.pos.z, true);
+    if (changed && this.mapId) {
+      this.loadMap(this.mapId, this.player.pos.x, this.player.pos.z, true);
+      if (this.flags.warden_dead) this.revealBossChest();
+    }
   }
   updateRemotePlayer(id, peer) {
     let rp = this.remotes.get(id);
@@ -1908,16 +2128,21 @@ class Game {
         if (pr) this.world.moveBoulder(pr, msg.x, msg.y);
         break;
       }
-      case 'wardenDead':
+      case 'wardenDead': {
         this.flags.warden_dead = true;
+        this.flags.cave_door = this.flags.cave_door || true;
+        if (msg.damagers?.length) this.wardenDamagers = new Set(msg.damagers);
         this.setStage(5);
         if (this.mapId === 'boss') {
           const boss = this.enemies.find(e => e.def.boss);
           if (boss) { this.scene.remove(boss.sprite.group); this.enemies = this.enemies.filter(e => e !== boss); }
           this.ui.setBossBar(null);
-          this.revealBossChest();
+          playMusic('cave');
         }
+        this.revealBossChest();
+        if (!this.net.isHost) this.toast('THE STONE WARDEN HAS FALLEN', true);
         break;
+      }
       case 'enemyDie': {
         if (msg.map !== this.mapId) break;
         const e = this.enemies.find(x => x.id === msg.eid);
@@ -1943,7 +2168,7 @@ class Game {
         if (this.net.isHost || msg.from === this.net.id) break;
         if (msg.map && this.maps[msg.map]) {
           this.loadMap(msg.map, msg.x, msg.z, true);
-          this.toast('Joined the host\'s party');
+          this.toast('Warped to host — world progress follows their quest stage', true);
         }
         break;
       case 'chestOpen': {
@@ -1957,11 +2182,9 @@ class Game {
           id: msg.id, ownerId: msg.owner, ghost: true,
         });
         break;
-      case 'combatFx': {
-        const rp = this.remotes.get(msg.from);
-        if (rp) rp.attackT = 0.22;
+      case 'combatFx':
+        if (msg.from !== this.net.id) this.playRemoteCombatFx(msg);
         break;
-      }
       case 'hitPlayer':
         if (msg.pid === this.net.id) this.player.damage(msg.dmg, this);
         break;
@@ -2091,12 +2314,12 @@ class Game {
           this.fx.projectileTrail(pr.pos, pr.owner === 'player', pr.kind);
         }
         // arrows / bolts slice through tall grass
-        if (this.world.cutGrass(pr.pos.x, pr.pos.z)) {
+        if (pr.owner === 'player' && this.world.cutGrass(pr.pos.x, pr.pos.z)) {
           SFX.grass();
           this.fx.particles(pr.pos, 4, 1.3);
           if (Math.random() < 0.06) this.spawnDrop('gold', 1, pr.pos.clone().setY(0));
         }
-        for (const e of this.enemies) {
+        if (pr.owner === 'player') for (const e of this.enemies) {
           if (e.dead || pr.hitSet.has(e.id)) continue;
           if (pr.pos.distanceTo(e.pos) < 0.45 + e.def.size * 0.25) {
             pr.hitSet.add(e.id);
@@ -2133,7 +2356,7 @@ class Game {
           }
         }
       }
-      if (!pr.dead) {
+      if (pr.owner === 'player' && !pr.dead) {
         for (const o of this.physObjs) {
           if (o.dead) continue;
           if (pr.pos.distanceTo(o.pos) < 0.5) {
@@ -2145,7 +2368,7 @@ class Game {
       }
       // dummies are solid tiles — projectiles stop at the tile edge, so check
       // even on the frame the projectile died, with a tile-sized radius
-      if (!wasDead) {
+      if (pr.owner === 'player' && !wasDead) {
         for (const d of this.world.props) {
           if (d.type === 'dummy' && d.hp > 0 && Math.hypot(d.x + 0.5 - pr.pos.x, d.y + 0.5 - pr.pos.z) < 0.8) {
             this.hitDummy(d, pr.dmg);
@@ -2154,8 +2377,8 @@ class Game {
         }
       }
       if (pr.dead) {
-        const hitEnemy = pr.hitSet.size > 0;
-        this.fx.impact(pr.pos, { bright: pr.owner === 'player', big: hitEnemy });
+        const hitEnemy = pr.owner === 'player' && pr.hitSet.size > 0;
+        this.fx.impact(pr.pos, { bright: pr.owner === 'player', big: hitEnemy || pr.big });
         if (pr.glowLight) {
           this.fx.fadeLight(pr.glowLight, pr.pos);
           pr.glowLight = null;
@@ -2179,6 +2402,7 @@ class Game {
         }
         this.scene.remove(d.mesh);
         this.drops = this.drops.filter(x => x !== d);
+        this.ui.refreshInventoryIfOpen();
         this.save();
       }
     }
@@ -2313,12 +2537,18 @@ function setupTitle() {
   migrateLegacySave();
   let chosen = null;
   let selectedSlot = null;
+  let coopOpen = false;
   const slotSaves = Array.from({ length: SAVE_SLOTS }, (_, i) => loadSlot(i));
 
   const hint = $('#title-slot-hint');
+  const afterSlot = $('#title-after-slot');
+  const classSelect = $('#class-select');
+  const heroPanel = $('#hero-panel');
   const soloBtn = $('#btn-solo');
   const coopBtn = $('#btn-coop');
   const coopPanel = $('#title-coop-panel');
+  const coopStartBtn = $('#btn-coop-start');
+  const titleControls = $('#title-controls');
 
   function refreshSlots() {
     document.querySelectorAll('.save-slot').forEach((btn, i) => {
@@ -2341,32 +2571,54 @@ function setupTitle() {
     });
   }
 
+  function refreshHeroPanel(save) {
+    if (!save) return;
+    const klass = save.klass;
+    blitTo($('#hero-portrait'), Art.chars[klass].down[0]);
+    $('#hero-class-name').textContent = CLASSES[klass]?.name?.toUpperCase() || klass.toUpperCase();
+    $('#hero-meta').textContent = `Level ${save.level} · ${save.mapId || 'town'} · ${save.gold || 0}g`;
+  }
+
   function updateTitleActions() {
     refreshSlots();
     refreshClassCards();
     const save = selectedSlot != null ? slotSaves[selectedSlot] : null;
     const klass = save?.klass || chosen;
     const ready = selectedSlot != null && klass;
-    soloBtn.disabled = !ready;
-    coopBtn.disabled = !ready;
-    coopPanel.classList.toggle('hidden', selectedSlot == null);
+
+    afterSlot.classList.toggle('hidden', selectedSlot == null);
+    titleControls.classList.toggle('hidden', selectedSlot == null);
+
     if (selectedSlot == null) {
-      hint.textContent = 'Choose a save slot to begin';
-      soloBtn.textContent = 'PLAY SOLO';
-      coopBtn.textContent = 'PLAY CO-OP';
+      hint.textContent = 'Choose a save slot';
+      coopOpen = false;
+      coopPanel.classList.add('hidden');
+      coopBtn.classList.remove('active');
       return;
     }
+
     if (save) {
-      hint.textContent = `Slot ${selectedSlot + 1} · ${save.lastRoom ? `last room "${save.lastRoom}"` : 'solo progress'}`;
+      classSelect.classList.add('hidden');
+      heroPanel.classList.remove('hidden');
+      refreshHeroPanel(save);
+      hint.textContent = `Slot ${selectedSlot + 1} · continue your journey`;
       soloBtn.textContent = 'CONTINUE SOLO';
       coopBtn.textContent = 'CONTINUE CO-OP';
       if (save.lastRoom) $('#coop-room').value = save.lastRoom;
       if (save.lastHeroName) $('#coop-name').value = save.lastHeroName;
     } else {
-      hint.textContent = `Slot ${selectedSlot + 1} · pick a class for a new hero`;
+      classSelect.classList.remove('hidden');
+      heroPanel.classList.add('hidden');
+      hint.textContent = `Slot ${selectedSlot + 1} · pick a class`;
       soloBtn.textContent = 'NEW GAME · SOLO';
       coopBtn.textContent = 'NEW GAME · CO-OP';
     }
+
+    soloBtn.disabled = !ready;
+    coopBtn.disabled = !ready;
+    coopPanel.classList.toggle('hidden', !coopOpen);
+    coopBtn.classList.toggle('active', coopOpen);
+    coopStartBtn.textContent = save ? 'CONTINUE CO-OP' : 'JOIN ROOM';
   }
 
   document.querySelectorAll('.save-slot').forEach(btn => {
@@ -2374,6 +2626,8 @@ function setupTitle() {
       selectedSlot = Number(btn.dataset.slot);
       const save = slotSaves[selectedSlot];
       if (save) chosen = save.klass;
+      else chosen = null;
+      coopOpen = false;
       updateTitleActions();
       initAudio(); SFX.ui();
     });
@@ -2389,7 +2643,7 @@ function setupTitle() {
         return;
       }
       if (slotSaves[selectedSlot]) {
-        hint.textContent = 'This slot already has a hero — continue or pick an empty slot';
+        hint.textContent = 'This slot already has a hero — pick an empty slot for a new class';
         SFX.deny();
         return;
       }
@@ -2408,6 +2662,16 @@ function setupTitle() {
   });
 
   coopBtn.addEventListener('click', () => {
+    if (selectedSlot == null) return;
+    const save = slotSaves[selectedSlot];
+    const klass = save?.klass || chosen;
+    if (!klass) return;
+    coopOpen = !coopOpen;
+    updateTitleActions();
+    initAudio(); SFX.ui();
+  });
+
+  coopStartBtn.addEventListener('click', () => {
     if (selectedSlot == null) return;
     const save = slotSaves[selectedSlot];
     const klass = save?.klass || chosen;
