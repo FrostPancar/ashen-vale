@@ -31,33 +31,46 @@ export class Net {
   connect(room, name, klass, url = DEFAULT_URL) {
     this.room = room;
     this.heroName = name;
+    try { this.ws?.close(); } catch {}
+    this.ws = null;
+    this.id = null;
+    this.connected = false;
+    this.isHost = true;
+    this.peers.clear();
+    this.pingMs = null;
     return new Promise((resolve) => {
+      let settled = false;
+      const finish = (ok) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(fail);
+        resolve(ok);
+      };
       try { this.ws = new WebSocket(url); }
-      catch { return resolve(false); }
-      const fail = setTimeout(() => { try { this.ws.close(); } catch {} resolve(false); }, 3500);
+      catch { return finish(false); }
+      const fail = setTimeout(() => { try { this.ws?.close(); } catch {} finish(false); }, 3500);
       this.ws.onopen = () => {
         this.send({ t: 'join', room, name, klass });
       };
       this.ws.onmessage = (ev) => {
         const msg = JSON.parse(ev.data);
         if (msg.t === 'reject') {
-          clearTimeout(fail);
-          resolve(false);
+          finish(false);
           return;
         }
         if (msg.t === 'welcome') {
-          clearTimeout(fail);
           this.id = msg.id;
           this.isHost = msg.host;
           this.connected = true;
           for (const p of msg.peers) this.peers.set(p.id, { name: p.name, klass: p.klass, state: null });
-          resolve(true);
+          finish(true);
           this.game.onNetReady();
           return;
         }
         this.handle(msg);
       };
       this.ws.onclose = () => {
+        if (!settled) finish(false);
         const was = this.connected;
         this.connected = false;
         this.isHost = true;
@@ -76,9 +89,7 @@ export class Net {
         g.toast(`${msg.name} joined the vale`);
         if (this.isHost) {
           this.send({ t: 'flags', flags: g.shareableFlags() });
-          g.net.sendEvent('hostAnchor', {
-            map: g.mapId, x: +g.player.pos.x.toFixed(2), z: +g.player.pos.z.toFixed(2),
-          });
+          g.syncCoopAnchor();
         }
         break;
       case 'peerLeave': {

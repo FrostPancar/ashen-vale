@@ -291,14 +291,16 @@ class Game {
       this.scene.add(npc.sprite.group);
       this.npcs.push(npc);
     }
-    // spawn enemies (host authority; guests will be synced if host present)
-    for (const ed of def.enemies) {
-      if (ed.boss && this.flags.warden_dead) continue;
-      const e = ed.type === 'dummy'
-        ? new Enemy(ed.type, ed.x, ed.y)
-        : this.scaledEnemy(ed.type, ed.x, ed.y);
-      this.scene.add(e.sprite.group);
-      this.enemies.push(e);
+    // spawn enemies (host authority; guests receive positions from host sync)
+    if (!this.net.connected || this.net.isHost) {
+      for (const ed of def.enemies) {
+        if (ed.boss && this.flags.warden_dead) continue;
+        const e = ed.type === 'dummy'
+          ? new Enemy(ed.type, ed.x, ed.y)
+          : this.scaledEnemy(ed.type, ed.x, ed.y);
+        this.scene.add(e.sprite.group);
+        this.enemies.push(e);
+      }
     }
     if (id === 'boss' && !this.flags.warden_dead) this.wardenDamagers = null;
     // boss chest reveal if already earned
@@ -312,6 +314,7 @@ class Game {
     this.ui.showArea(def.name);
     this.ui.setBossBar(null);
     this.refreshRemoteVisibility();
+    this.syncCoopAnchor();
     this.save();
 
     // first arrival in Ashfall — the demo's big moment
@@ -2019,6 +2022,7 @@ class Game {
     if (this.net.connected) {
       this.net.send({ t: 'flags', flags: this.shareableFlags() });
     }
+    this.syncCoopAnchor();
     if (this.flags.warden_dead) this.revealBossChest();
     if (this.mapId === 'boss' && this.flags.warden_dead) playMusic('cave');
   }
@@ -2042,12 +2046,17 @@ class Game {
     }
   }
 
+  syncCoopAnchor() {
+    if (!this.net.connected || !this.net.isHost || !this.mapId || this.net.peers.size === 0) return;
+    this.net.sendEvent('hostAnchor', {
+      map: this.mapId,
+      x: +this.player.pos.x.toFixed(2),
+      z: +this.player.pos.z.toFixed(2),
+    });
+  }
+
   onNetReady() {
-    if (this.net.isHost && this.net.peers.size > 0) {
-      this.net.sendEvent('hostAnchor', {
-        map: this.mapId, x: +this.player.pos.x.toFixed(2), z: +this.player.pos.z.toFixed(2),
-      });
-    }
+    this.syncCoopAnchor();
   }
   onNetDrop() {
     this.toast('Co-op connection lost — continuing solo');
@@ -2113,7 +2122,7 @@ class Game {
     }
   }
   guestSynced() {
-    return this.net.connected && !this.net.isHost && (this.elapsed - this.lastEnemySyncAt) < 1.0;
+    return this.net.connected && !this.net.isHost;
   }
   enemySyncData() {
     return this.enemies.map(e => ({
@@ -2131,7 +2140,7 @@ class Game {
       seen.add(s.id);
       let e = byId.get(s.id);
       if (!e) {
-        e = new Enemy(s.type, s.x - 0.5, s.z - 0.5);
+        e = this.scaledEnemy(s.type, s.x - 0.5, s.z - 0.5);
         e.id = s.id;
         this.scene.add(e.sprite.group);
         this.enemies.push(e);
