@@ -14,7 +14,7 @@ const SOLID_CHARS = new Set(['#', '^', 'h', 'F', 'w', 'r', '=', 'X', 'C', 'W', '
 export const MAP_SPRINKLES = {
   town: {
     patches: [
-      // west lane: witch neighbor, laundry, shared beds, graves get a topiary
+      // west lane: witch neighbor, laundry, shared beds
       { id: 'witchs_stoop', x: 2, y: 8 },
       { id: 'community_garden', x: 3, y: 14 },
       { id: 'laundry_line', x: 2, y: 18 },
@@ -53,7 +53,6 @@ export const MAP_SPRINKLES = {
       // south-east: ambush field props + the oracle heap by the wanderer
       { id: 'overturned_cart', x: 30, y: 55 },
       { id: 'trash_heap', x: 14, y: 62 },
-      { id: 'graveyard_small', x: 3, y: 61 },
       { id: 'offering_bowl', x: 12, y: 66 },
       // mid-map: rain pool off the bend, cold camp by the river, spooky field
       { id: 'rain_pool', x: 24, y: 47 },

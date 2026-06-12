@@ -1,12 +1,75 @@
 // ASHEN VALE — DOM UI: HUD, dialog, inventory, skills, shop, toasts.
 import { Art, blitTo } from './art.js';
-import { RARITIES, itemStatDelta, formatStatDeltaHtml } from './items.js';
+import { RARITIES, itemStatDelta, formatStatDeltaHtml, getItemPassive } from './items.js';
 import { CLASSES, SKILL_MAX, skillRankLabel, skillNextDesc } from './skills.js';
 import { treeLanes, nodeState, nodeOwned, unlockNode, applyTreeStats } from './skilltree.js';
 import { QUEST_TEXT } from './quests.js';
 import { SFX } from './audio.js';
 
 const $ = (s) => document.querySelector(s);
+
+const AFFIX_CLS = {
+  dmg: 'aff-atk', crit: 'aff-atk', leech: 'aff-atk',
+  def: 'aff-def', spd: 'aff-def',
+  hp: 'aff-hp',
+  mp: 'aff-mp', cdr: 'aff-mp',
+};
+
+function affixClass(id) {
+  if (id.startsWith('proc_')) return 'aff-fx';
+  return AFFIX_CLS[id] || 'aff-misc';
+}
+
+function buildItemTooltipHtml(item, { actionText, compareTo } = {}) {
+  const r = RARITIES[item.rarity];
+  const passive = getItemPassive(item);
+  const statAffixes = [];
+  const procAffixes = [];
+  for (const a of item.affixes) {
+    if (a.proc || a.id.startsWith('proc_')) procAffixes.push(a);
+    else statAffixes.push(a);
+  }
+
+  let html = `<div class="tt-head"><div class="t-name ${r.cls}">${item.name}</div>`;
+  html += `<div class="t-type">${r.name.toUpperCase()} ${item.slot.toUpperCase()} · ilvl ${item.level}</div></div>`;
+
+  const core = [];
+  if (item.dmg) core.push(`<div class="tt-stat"><span class="tt-stat-k">Damage</span><span class="tt-stat-v aff-atk">${item.dmg}</span></div>`);
+  if (item.def) core.push(`<div class="tt-stat"><span class="tt-stat-k">Defense</span><span class="tt-stat-v aff-def">${item.def}</span></div>`);
+  if (core.length) html += `<div class="tt-section tt-core">${core.join('')}</div>`;
+
+  if (statAffixes.length) {
+    html += `<div class="tt-section"><div class="tt-label">Enchantments</div><div class="tt-affix-list">`;
+    for (const a of statAffixes) {
+      html += `<div class="tt-affix ${affixClass(a.id)}">${a.text}</div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  if (procAffixes.length) {
+    html += `<div class="tt-section"><div class="tt-label">Effects</div><div class="tt-affix-list">`;
+    for (const a of procAffixes) {
+      html += `<div class="tt-affix aff-fx">${a.text}</div>`;
+    }
+    html += `</div></div>`;
+  }
+
+  if (passive) {
+    html += `<div class="tt-section tt-passive"><div class="tt-label">${passive.label}</div>`;
+    html += `<div class="tt-passive-desc aff-fx">${passive.desc}</div></div>`;
+  }
+
+  const deltas = compareTo ? itemStatDelta(item, compareTo) : [];
+  if (deltas.length) {
+    html += `<div class="tt-section tt-compare"><div class="tt-label">vs equipped</div>`;
+    html += `<div class="t-compare-body">${formatStatDeltaHtml(deltas)}</div></div>`;
+  } else if (compareTo === null && actionText === 'click to equip') {
+    html += `<div class="tt-section tt-compare tt-compare-new">New slot — no comparison</div>`;
+  }
+
+  if (actionText) html += `<div class="t-action">${actionText}</div>`;
+  return html;
+}
 
 export class UI {
   constructor(game) {
@@ -247,7 +310,7 @@ export class UI {
   closePanel() {
     this.panelOpen = false;
     $('#panel').classList.add('hidden');
-    $('#item-tooltip').classList.add('hidden');
+    this.hideTooltip();
     if (!this.inDialog && !this.shopOpen) this.game.unlockUI();
   }
   showTab(tab) {
@@ -273,36 +336,44 @@ export class UI {
       div.appendChild(c);
       div.addEventListener('mouseenter', (e) => this.showTooltip(item, e, actionText, compareTo));
       div.addEventListener('mousemove', (e) => this.moveTooltip(e));
-      div.addEventListener('mouseleave', () => $('#item-tooltip').classList.add('hidden'));
-      if (onClick) div.addEventListener('click', () => { onClick(); $('#item-tooltip').classList.add('hidden'); });
+      div.addEventListener('mouseleave', () => this.hideTooltip());
+      if (onClick) div.addEventListener('click', () => { onClick(); this.hideTooltip(); });
     }
     return div;
   }
 
   showTooltip(item, e, actionText, compareTo = null) {
     const tt = $('#item-tooltip');
-    const r = RARITIES[item.rarity];
-    let html =
-      `<div class="t-name ${r.cls}">${item.name}</div>` +
-      `<div class="t-type">${r.name} ${item.slot} · ilvl ${item.level}</div>`;
-    if (item.dmg) html += `<div class="t-stat">Damage: ${item.dmg}</div>`;
-    if (item.def) html += `<div class="t-stat">Defense: ${item.def}</div>`;
-    for (const a of item.affixes) html += `<div class="t-affix">${a.text}</div>`;
-    const deltas = compareTo ? itemStatDelta(item, compareTo) : [];
-    if (deltas.length) {
-      html += `<div class="t-compare"><span class="t-compare-label">vs equipped</span> ${formatStatDeltaHtml(deltas)}</div>`;
-    } else if (compareTo === null && actionText === 'click to equip') {
-      html += `<div class="t-compare t-compare-new">New slot — no comparison</div>`;
-    }
-    if (actionText) html += `<div class="t-action">${actionText}</div>`;
-    tt.innerHTML = html;
+    tt.innerHTML = buildItemTooltipHtml(item, { actionText, compareTo });
     tt.classList.remove('hidden');
-    this.moveTooltip(e);
+    tt.setAttribute('aria-hidden', 'false');
+    this.layoutTooltip(e);
   }
-  moveTooltip(e) {
+
+  layoutTooltip(e) {
     const tt = $('#item-tooltip');
-    tt.style.left = Math.min(window.innerWidth - 260, e.clientX + 14) + 'px';
-    tt.style.top = Math.min(window.innerHeight - 200, e.clientY + 10) + 'px';
+    const pad = 10;
+    tt.style.left = '0px';
+    tt.style.top = '0px';
+    const rect = tt.getBoundingClientRect();
+    let x = e.clientX + 14;
+    let y = e.clientY + 12;
+    if (x + rect.width > window.innerWidth - pad) x = Math.max(pad, e.clientX - rect.width - 14);
+    if (y + rect.height > window.innerHeight - pad) y = Math.max(pad, window.innerHeight - rect.height - pad);
+    if (x < pad) x = pad;
+    if (y < pad) y = pad;
+    tt.style.left = `${x}px`;
+    tt.style.top = `${y}px`;
+  }
+
+  moveTooltip(e) {
+    this.layoutTooltip(e);
+  }
+
+  hideTooltip() {
+    const tt = $('#item-tooltip');
+    tt.classList.add('hidden');
+    tt.setAttribute('aria-hidden', 'true');
   }
 
   renderInventory() {

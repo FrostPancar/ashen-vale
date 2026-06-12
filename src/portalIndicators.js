@@ -103,15 +103,15 @@ function drawGroundMarkers(world, portal, facing, locked) {
 }
 
 function makePortalLabel(text, locked) {
-  const [c, ctx] = makeCanvas(text.length * 7 + 10, 14);
-  ctx.fillStyle = locked ? 'rgba(52,54,52,0.82)' : 'rgba(52,54,52,0.78)';
-  ctx.fillRect(0, 0, c.width, 14);
+  const [c, ctx] = makeCanvas(text.length * 8 + 12, 16);
+  ctx.fillStyle = locked ? 'rgba(48,50,48,0.9)' : 'rgba(48,50,48,0.88)';
+  ctx.fillRect(0, 0, c.width, 16);
   ctx.fillStyle = locked ? PAL[2] : PAL[3];
-  ctx.font = 'bold 8px monospace';
+  ctx.font = 'bold 10px monospace';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, 4, 7);
+  ctx.fillText(text, 5, 8);
   const m = new THREE.Mesh(
-    new THREE.PlaneGeometry(c.width / 32, 0.42),
+    new THREE.PlaneGeometry(c.width / 28, 0.48),
     new THREE.MeshBasicMaterial({ map: canvasTexture(c), transparent: true, depthWrite: false }),
   );
   m.rotation.x = -Math.atan2(9.5, 7.5);

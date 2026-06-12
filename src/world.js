@@ -15,6 +15,22 @@ function tileTex(name) {
   return texCache.get(name);
 }
 
+function groundTexFor(ch, td) {
+  if (ch === 'F') return 'grass2';
+  if (ch === ',') return 'grassGround';
+  return td.tex;
+}
+
+function fenceAlongX(x, y, d, w, h) {
+  const isF = (a, b) => a >= 0 && b >= 0 && a < w && b < h && d[b * w + a] === 'F';
+  const ew = isF(x - 1, y) || isF(x + 1, y);
+  const ns = isF(x, y - 1) || isF(x, y + 1);
+  if (ns && !ew) return false;
+  return true;
+}
+
+function tileHash(x, y) { return (x * 73856093) ^ (y * 19349663); }
+
 /* Build an upright billboard plane whose origin is its bottom-center. */
 export function makeBillboard(canvas, w, h, opts = {}) {
   const tex = canvasTexture(canvas);
@@ -82,6 +98,11 @@ export class World {
     this.cutSet.add(key);
     this.groundCtx.drawImage(Art.tiles.cutgrass, tx * 16, tz * 16);
     this.groundTex.needsUpdate = true;
+    const tuft = this.grassTufts?.get(key);
+    if (tuft) {
+      this.group.remove(tuft);
+      this.grassTufts.delete(key);
+    }
     return true;
   }
 
@@ -114,7 +135,7 @@ export class World {
       for (let x = 0; x < w; x++) {
         const ch = d[y * w + x];
         const td = TILDEF[ch] || TILDEF['.'];
-        gctx.drawImage(Art.tiles[td.tex], x * 16, y * 16);
+        gctx.drawImage(Art.tiles[groundTexFor(ch, td)], x * 16, y * 16);
         if (td.solid) this.solid[y * w + x] = 1;
         if (td.water) {
           hasWater = true;
@@ -129,6 +150,7 @@ export class World {
     this.groundCtx = gctx;
     this.groundTex = groundTex;
     this.cutSet = new Set();
+    this.grassTufts = new Map();
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(w, h),
       new THREE.MeshLambertMaterial({ map: groundTex })
@@ -150,6 +172,10 @@ export class World {
 
     /* ---- tall tiles (cliffs / cave walls / interior walls) as instanced boxes ---- */
     this.buildWalls(def, w, h, d);
+
+    /* ---- 3D fences & grass tufts ---- */
+    this.buildFences(w, h, d);
+    this.buildGrassTufts(w, h, d);
 
     /* ---- trees as billboards ---- */
     for (const t of treeSpots) {
@@ -194,6 +220,134 @@ export class World {
       });
       this.group.add(inst);
     }
+  }
+
+  buildFences(w, h, d) {
+    const fences = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (d[y * w + x] === 'F') fences.push([x, y]);
+    }
+    if (!fences.length) return;
+    const postGeo = new THREE.BoxGeometry(0.08, 0.56, 0.08);
+    const railGeoX = new THREE.BoxGeometry(0.88, 0.055, 0.06);
+    const railGeoZ = new THREE.BoxGeometry(0.06, 0.055, 0.88);
+    const postMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(PAL[0]) });
+    const railMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(PAL[1]) });
+    const posts = new THREE.InstancedMesh(postGeo, postMat, fences.length * 2);
+    const railsX = [];
+    const railsZ = [];
+    const m4 = new THREE.Matrix4();
+    const pos = new THREE.Vector3();
+    const q = new THREE.Quaternion();
+    const sc = new THREE.Vector3(1, 1, 1);
+    fences.forEach(([x, y], fi) => {
+      const alongX = fenceAlongX(x, y, d, w, h);
+      const cx = x + 0.5, cz = y + 0.5;
+      const hw = 0.4;
+      const postPts = alongX ? [[-hw, 0.28, 0], [hw, 0.28, 0]] : [[0, 0.28, -hw], [0, 0.28, hw]];
+      postPts.forEach(([px, py, pz], pi) => {
+        pos.set(cx + px, py, cz + pz);
+        q.identity();
+        m4.compose(pos, q, sc);
+        posts.setMatrixAt(fi * 2 + pi, m4);
+      });
+      for (const ry of [0.38, 0.22]) {
+        pos.set(cx, ry, cz);
+        q.identity();
+        m4.compose(pos, q, sc);
+        (alongX ? railsX : railsZ).push(m4.clone());
+      }
+    });
+    posts.instanceMatrix.needsUpdate = true;
+    this.group.add(posts);
+    if (railsX.length) {
+      const inst = new THREE.InstancedMesh(railGeoX, railMat, railsX.length);
+      railsX.forEach((mat, i) => inst.setMatrixAt(i, mat));
+      inst.instanceMatrix.needsUpdate = true;
+      this.group.add(inst);
+    }
+    if (railsZ.length) {
+      const inst = new THREE.InstancedMesh(railGeoZ, railMat, railsZ.length);
+      railsZ.forEach((mat, i) => inst.setMatrixAt(i, mat));
+      inst.instanceMatrix.needsUpdate = true;
+      this.group.add(inst);
+    }
+  }
+
+  _grassBillboard(canvas, w, h) {
+    const tex = canvasTexture(canvas);
+    const mat = new THREE.MeshLambertMaterial({
+      map: tex, transparent: true, alphaTest: 0.35, side: THREE.DoubleSide, depthWrite: false,
+    });
+    const geo = new THREE.PlaneGeometry(w, h);
+    geo.translate(0, h / 2, 0);
+    return new THREE.Mesh(geo, mat);
+  }
+
+  _spawnGrassTuftsAt(tx, ty, w, h, tall = true) {
+    const key = ty * w + tx;
+    if (this.grassTufts.has(key)) return;
+    const group = new THREE.Group();
+    const cx = tx + 0.5, cz = ty + 0.5;
+    const hsh = tileHash(tx, ty);
+    const spots = tall
+      ? [[-0.28, -0.12], [0.02, -0.22], [0.26, -0.1], [0.38, 0.08]]
+      : [[(hsh & 3) / 16 - 0.1, ((hsh >> 2) & 3) / 16 - 0.1]];
+    const sprites = tall ? Art.grassTufts : Art.grassBlades;
+    const scale = tall ? 0.028 : 0.022;
+    for (let i = 0; i < spots.length; i++) {
+      const [ox, oz] = spots[i];
+      const canvas = sprites[(hsh + i * 5) % sprites.length];
+      const bh = canvas.height * scale;
+      const bw = canvas.width * scale;
+      for (const rot of [0, Math.PI / 2]) {
+        const plane = this._grassBillboard(canvas, bw, bh);
+        plane.rotation.x = SPRITE_TILT * 0.5;
+        plane.rotation.y = rot;
+        plane.position.set(cx + ox, 0, cz + oz);
+        group.add(plane);
+      }
+    }
+    group.position.set(0, 0, 0);
+    this.group.add(group);
+    this.grassTufts.set(key, group);
+  }
+
+  buildGrassTufts(w, h, d) {
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const ch = d[y * w + x];
+      if (ch === ',') this._spawnGrassTuftsAt(x, y, w, h, true);
+      else if ((ch === '.' || ch === ':') && (tileHash(x, y) & 7) === 0) {
+        this._spawnGrassTuftsAt(x, y, w, h, false);
+      }
+    }
+  }
+
+  _spawnFenceAt(tx, ty) {
+    const { w, h, d } = this.def.grid;
+    const alongX = fenceAlongX(tx, ty, d, w, h);
+    const cx = tx + 0.5, cz = ty + 0.5;
+    const hw = 0.4;
+    const postMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(PAL[0]) });
+    const railMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(PAL[1]) });
+    const group = new THREE.Group();
+    const postPts = alongX ? [[-hw, 0.28, 0], [hw, 0.28, 0]] : [[0, 0.28, -hw], [0, 0.28, hw]];
+    for (const [px, py, pz] of postPts) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.56, 0.08), postMat);
+      m.position.set(cx + px, py, cz + pz);
+      group.add(m);
+    }
+    const railGeo = alongX
+      ? new THREE.BoxGeometry(0.88, 0.055, 0.06)
+      : new THREE.BoxGeometry(0.06, 0.055, 0.88);
+    for (const ry of [0.38, 0.22]) {
+      const m = new THREE.Mesh(railGeo, railMat);
+      m.position.set(cx, ry, cz);
+      group.add(m);
+    }
+    this.group.add(group);
+    if (!this.fenceExtras) this.fenceExtras = [];
+    this.fenceExtras.push(group);
   }
 
   // Gabled roof prism: ridge runs along the x axis, eaves at y=0, ridge at y=h.
@@ -258,12 +412,12 @@ export class World {
     }
     // label sign above door
     if (b.label) {
-      const [lc, lctx] = makeCanvas(b.label.length * 8 + 8, 14);
-      lctx.fillStyle = PAL[0]; lctx.fillRect(0, 0, lc.width, 14);
-      lctx.fillStyle = PAL[3]; lctx.font = 'bold 9px monospace'; lctx.textBaseline = 'middle';
-      lctx.fillText(b.label, 4, 8);
+      const [lc, lctx] = makeCanvas(b.label.length * 9 + 10, 16);
+      lctx.fillStyle = PAL[0]; lctx.fillRect(0, 0, lc.width, 16);
+      lctx.fillStyle = PAL[3]; lctx.font = 'bold 10px monospace'; lctx.textBaseline = 'middle';
+      lctx.fillText(b.label, 5, 8);
       const lbl = new THREE.Mesh(
-        new THREE.PlaneGeometry(lc.width / 28, 0.5),
+        new THREE.PlaneGeometry(lc.width / 26, 0.55),
         new THREE.MeshBasicMaterial({ map: canvasTexture(lc), transparent: true })
       );
       lbl.position.set(b.door.x + 0.5, 1.45, b.y + b.h - 0.36);
@@ -451,11 +605,14 @@ export class World {
         if (tx < 0 || ty < 0 || tx >= mw || ty >= mh) continue;
         const tex = TILE_MAP[ch] || (TILDEF[ch]?.tex) || 'grass';
         if (Art.tiles[tex] && this.groundCtx) {
-          this.groundCtx.drawImage(Art.tiles[tex], tx * 16, ty * 16);
+          const td = TILDEF[ch] || TILDEF['.'];
+          this.groundCtx.drawImage(Art.tiles[groundTexFor(ch, td)], tx * 16, ty * 16);
         }
         if (TILDEF[ch]?.solid || SOLID_CHARS.has(ch)) {
           this.solid[ty * mw + tx] = 1;
         }
+        if (ch === 'F') this._spawnFenceAt(tx, ty);
+        if (ch === ',') this._spawnGrassTuftsAt(tx, ty, mw, mh, true);
       }
     }
     if (this.groundTex) this.groundTex.needsUpdate = true;
@@ -501,9 +658,10 @@ export class World {
       this.scene.fog = new THREE.FogExp2(new THREE.Color('#525452'), 0.10);
       this.scene.background = new THREE.Color('#484a48');
     } else if (amb === 'interior') {
-      // Baked interior fill — no map-wide PointLight; warmth comes from prop emissive + halos.
-      this.group.add(new THREE.HemisphereLight(PAL[3], PAL[0], 0.55));
-      this.group.add(new THREE.AmbientLight(PAL[2], 0.72));
+      this.group.add(new THREE.AmbientLight(PAL[2], 0.85));
+      const warm = new THREE.PointLight(PAL[3], 8, 12, 1.2);
+      warm.position.set(w / 2, 2.4, h / 2);
+      this.group.add(warm);
       this.playerLight = null;
       this.scene.fog = new THREE.Fog(new THREE.Color(PAL[0]), 14, 30);
       this.scene.background = new THREE.Color(PAL[0]);

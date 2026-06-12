@@ -963,6 +963,12 @@ function buildTiles() {
     grassBlade(ctx, 15, 14, 2, -1); grassBlade(ctx, 2, 1, 2, 1);
     px(ctx, 3, 9, 3); px(ctx, 3, 14, 1); px(ctx, 3, 5, 11);
   });
+  TILES.grassGround = tileCanvas((ctx) => {
+    fill(ctx, 2);
+    grassPatch(ctx, [[1, 12, 14, 3]]);
+    grassBlade(ctx, 0, 13, 2, -1); grassBlade(ctx, 4, 14, 2);
+    grassBlade(ctx, 8, 13, 2, 1); grassBlade(ctx, 15, 12, 2, -1);
+  });
   TILES.tallgrass = tileCanvas((ctx) => {
     fill(ctx, 2);
     grassPatch(ctx, [[1, 12, 14, 3]]);
@@ -1142,6 +1148,31 @@ function buildTiles() {
   });
 }
 
+// Upright grass tuft sprites for 3D billboards (tall + short variants).
+function paintGrassTuftSprite(h, lean = 0) {
+  const w = 10, top = 1;
+  const [c, ctx] = makeCanvas(w, h + top + 1);
+  const cx = 4 + lean;
+  ctx.fillStyle = PAL[0];
+  ctx.fillRect(cx + 1, h - 1, 2, 2);
+  for (let i = 0; i < h; i++) {
+    const y = top + h - 1 - i;
+    px(ctx, 1, cx, y);
+    if (i > 0) px(ctx, 1, cx - 1 + (lean < 0 ? -1 : lean > 0 ? 1 : 0), y);
+    if (i > 1) px(ctx, 1, cx + 1, y - 1);
+  }
+  px(ctx, 2, cx - 1 + lean, top);
+  px(ctx, 2, cx + lean, top);
+  px(ctx, 3, cx - 1 + lean, top - 1);
+  return c;
+}
+function paintGrassBladeSprite(h = 6) {
+  const [c, ctx] = makeCanvas(6, h + 2);
+  px(ctx, 1, 2, h); px(ctx, 1, 2, h - 1);
+  px(ctx, 2, 2, 1); px(ctx, 3, 2, 0);
+  return c;
+}
+
 /* ================= EXPORTED ART REGISTRY ================= */
 export const Art = {
   tiles: TILES,
@@ -1150,8 +1181,17 @@ export const Art = {
   props: {},
   icons: {},
   projectiles: {},
+  grassTufts: [],
+  grassBlades: [],
   init() {
     buildTiles();
+    this.grassTufts = [
+      paintGrassTuftSprite(13, -1),
+      paintGrassTuftSprite(15, 0),
+      paintGrassTuftSprite(12, 1),
+      paintGrassTuftSprite(14, -1),
+    ];
+    this.grassBlades = [paintGrassBladeSprite(5), paintGrassBladeSprite(6), paintGrassBladeSprite(7)];
     this.chars.knight = buildCharFrames('knight');
     this.chars.ranger = buildCharFrames('ranger');
     this.chars.mage = buildCharFrames('mage');
@@ -1199,6 +1239,7 @@ export const Art = {
     this.props.fishspot = asciiCanvas(FISHSPOT);
     this.props.basket = asciiCanvas(BASKET);
     this.enemies.rat = [asciiCanvas(RAT0), asciiCanvas(RAT1)];
+    this.enemies.dummy = [asciiCanvas(DUMMY), asciiCanvas(DUMMY)];
     for (const [k, rows] of Object.entries(ICONS)) this.icons[k] = asciiCanvas(rows);
     this.projectiles.arrow = paintArrow(false);
     this.projectiles.arrowHeavy = paintArrow(true);

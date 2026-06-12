@@ -4,7 +4,7 @@ import { Art, PAL, makeCanvas, canvasTexture, paintArrow, paintOrb } from './art
 import { makeBillboard, makeBlobShadow, SPRITE_TILT } from './world.js';
 import { CLASSES, classSkillList, xpForLevel } from './skills.js';
 import { STATUSES } from './skilltree.js';
-import { itemStats, getEquippedPassives } from './items.js';
+import { itemStats, getEquippedPassives, getEquippedThornDamage } from './items.js';
 import { SFX } from './audio.js';
 import { launchRagdoll, updateRagdoll, SquashSpring, velocityStretch, ragdollBillPose } from './physics.js';
 
@@ -14,12 +14,12 @@ const RADIUS = 0.28;
 
 /* ---------------- helpers ---------------- */
 export function makeLabel(text, scale = 1) {
-  const [c, ctx] = makeCanvas(text.length * 7 + 6, 12);
-  ctx.fillStyle = 'rgba(72,74,72,0.75)'; ctx.fillRect(0, 0, c.width, 12);
-  ctx.fillStyle = PAL[3]; ctx.font = '8px monospace'; ctx.textBaseline = 'middle';
-  ctx.fillText(text, 3, 6);
+  const [c, ctx] = makeCanvas(text.length * 8 + 8, 14);
+  ctx.fillStyle = 'rgba(48,50,48,0.88)'; ctx.fillRect(0, 0, c.width, 14);
+  ctx.fillStyle = PAL[3]; ctx.font = 'bold 10px monospace'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, 4, 7);
   const m = new THREE.Mesh(
-    new THREE.PlaneGeometry((c.width / 40) * scale, 0.3 * scale),
+    new THREE.PlaneGeometry((c.width / 36) * scale, 0.34 * scale),
     new THREE.MeshBasicMaterial({ map: canvasTexture(c), transparent: true, depthWrite: false })
   );
   m.rotation.x = SPRITE_TILT;
@@ -27,13 +27,13 @@ export function makeLabel(text, scale = 1) {
 }
 
 function paintNameplate(name, hp, maxHp, downed) {
-  const w = Math.max(56, name.length * 7 + 16);
-  const h = downed ? 22 : 18;
+  const w = Math.max(64, name.length * 8 + 18);
+  const h = downed ? 24 : 20;
   const [c, ctx] = makeCanvas(w, h);
-  ctx.fillStyle = 'rgba(72,74,72,0.78)'; ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = downed ? PAL[1] : PAL[3]; ctx.font = '8px monospace'; ctx.textBaseline = 'top';
+  ctx.fillStyle = 'rgba(48,50,48,0.9)'; ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = downed ? PAL[2] : PAL[3]; ctx.font = 'bold 10px monospace'; ctx.textBaseline = 'top';
   ctx.fillText(name.slice(0, 12), 4, 2);
-  const barY = 12, barW = w - 8, barH = 4;
+  const barY = 14, barW = w - 8, barH = 4;
   ctx.fillStyle = PAL[0]; ctx.fillRect(4, barY, barW, barH);
   const frac = maxHp > 0 ? Math.max(0, Math.min(1, hp / maxHp)) : 0;
   ctx.fillStyle = downed ? PAL[1] : PAL[2];
@@ -120,6 +120,7 @@ export class Player {
     this.lastSkillHitT = 0;
     this.critSurgeT = 0;
     this.squash = new SquashSpring();
+    this.breathePhase = Math.random() * Math.PI * 2;
     this.prevPos = this.pos.clone();
     this.dashVec = null; this.dashT = 0;
     this.downed = false;
@@ -225,7 +226,14 @@ export class Player {
       if (Math.hypot(vx, vz) > 20) { vx = 0; vz = 0; } // teleport, not motion
       const tgt = velocityStretch(vx, vz, rag ? rag.vy : 0);
       this.squash.update(dt, tgt.tx, tgt.ty);
-      this.sprite.bill.scale.set(this.squash.sx, this.squash.sy, 1);
+      let sx = this.squash.sx, sy = this.squash.sy;
+      if (!rag && !this.downed) {
+        this.breathePhase += dt * 3.2;
+        const breathe = 1 + Math.sin(this.breathePhase) * 0.016;
+        sx *= breathe;
+        sy *= breathe;
+      }
+      this.sprite.bill.scale.set(sx, sy, 1);
     }
     this.prevPos.copy(this.pos);
     if (this.iframes > 0) this.sprite.bill.material.opacity = (Math.sin(performance.now() / 40) > 0 ? 1 : 0.35);
@@ -266,9 +274,10 @@ export class Player {
     const taken = Math.max(1, Math.round(mitig - this.stats.def * 0.6));
     this.hp -= taken;
     this.iframes = 0.7;
-    // thorn_retaliate: deal 3 dmg back to attacker
-    if (opts.attacker && passives.has('thorn_retaliate')) {
-      const died = opts.attacker.hit(3, game, null, false, {});
+    // thorns: Thorn Band passive + proc affixes on armor/trinkets
+    const thornDmg = getEquippedThornDamage(this.equip);
+    if (opts.attacker && thornDmg > 0) {
+      const died = opts.attacker.hit(thornDmg, game, null, false, {});
       if (died) game.killEnemy(opts.attacker);
     }
     SFX.hurt();
@@ -325,6 +334,7 @@ export const ENEMY_TYPES = {
            heavy: { cd: 7, mult: 2.2, range: 1.3, windup: 0.75 } },
   shade: { hp: 28, dmg: 6, speed: 2.3, xp: 14, aggro: 7, atkR: 0.75, atkCd: 1.1, size: 0.85, gold: [2, 7], fly: true, anim: 5 },
   rat:   { hp: 13, dmg: 3, speed: 2.4, xp: 6, aggro: 5, atkR: 0.7, atkCd: 0.9, size: 0.7, gold: [1, 3], anim: 9 },
+  dummy: { hp: 9, dmg: 0, speed: 0, xp: 0, aggro: 0, atkR: 0, atkCd: 99, size: 0.95, gold: [0, 0], training: true, anim: 1 },
   warden:{ hp: 380, dmg: 9, speed: 1.6, xp: 130, aggro: 12, atkR: 1.5, atkCd: 1.8, size: 2.3, gold: [40, 70], anim: 3, boss: true },
 };
 
@@ -375,6 +385,11 @@ export class Enemy {
     // damage-over-time / chill / freeze from skill-tree statuses
     if (Object.keys(this.status).length && this.tickStatus(dt, game)) {
       game.killEnemy(this);
+      return;
+    }
+
+    if (t.training) {
+      this.render(dt);
       return;
     }
 

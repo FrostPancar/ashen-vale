@@ -118,10 +118,6 @@ function buildTown() {
       { type: 'bench', x: 15, y: 29 },
       { type: 'sign', x: 20, y: 13, text: 'ELDERMOOR — last lit hearth before the Hollow Road.' },
       { type: 'sign', x: 36, y: 28, text: 'TRAINING YARD — strike the dummies. LEFT CLICK to attack. SPACE for your heavy skill — it sends things FLYING.' },
-      { type: 'dummy', id: 'dummy1', x: 37, y: 32 },
-      { type: 'dummy', id: 'dummy2', x: 40, y: 32 },
-      { type: 'dummy', id: 'dummy3', x: 38.5, y: 34.5 },
-      { type: 'grave', x: 4, y: 24 }, { type: 'grave', x: 6, y: 24 }, { type: 'grave', x: 5, y: 23 },
       { type: 'chest', id: 'town_chest', x: 41, y: 4, loot: 'bundle:gold:18-28|potion:1|item:trinket:common' },
       { type: 'fishspot', x: 7, y: 34 },
       // knockable / breakable clutter
@@ -137,7 +133,11 @@ function buildTown() {
       { id: 'villager2', sprite: 'villager2', x: 16, y: 24, wander: 3, dialog: 'villager2' },
       { id: 'kid', sprite: 'villager2', x: 30, y: 15, wander: 4, dialog: 'kid' },
     ],
-    enemies: [],
+    enemies: [
+      { type: 'dummy', x: 37, y: 32 },
+      { type: 'dummy', x: 40, y: 32 },
+      { type: 'dummy', x: 38.5, y: 34.5 },
+    ],
   };
 }
 
@@ -344,7 +344,6 @@ function buildCave() {
       { type: 'sign', x: 19, y: 8, text: 'Two locks, two levers. West lies buried. East lies guarded.' },
       { type: 'chest', id: 'cave_chest1', x: 33, y: 8, loot: 'item:armor:magic:def+hp' },
       { type: 'chest', id: 'cave_chest2', x: 5, y: 7, loot: 'bundle:potion:2|item:trinket:magic:mp+cdr' },
-      { type: 'grave', x: 22, y: 14 },
       // old supplies left in the dark
       { type: 'pot', x: 15, y: 23 }, { type: 'pot', x: 22, y: 25 },
       { type: 'crate', x: 9, y: 11 }, { type: 'rock', x: 20, y: 14 }, { type: 'rock', x: 27, y: 11 },

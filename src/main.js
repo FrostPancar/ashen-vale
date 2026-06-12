@@ -10,7 +10,7 @@ import { Effects } from './fx.js';
 import { CLASSES, classSkillList, skillDamage, skillDefFor, xpForLevel } from './skills.js';
 import { buildCast, playerFx, applyTreeStats, unlockNode, levelUpChoices, treeNode } from './skilltree.js';
 import { PhysObj, PHYS_TYPES } from './physics.js';
-import { generateItem, shopStock, smithStock, armoryStock, resolveLootSpec, rollEnemyLoot, canEquipWeapon, itemStatDelta, formatStatDelta, getEquippedPassives } from './items.js';
+import { generateItem, shopStock, smithStock, armoryStock, resolveLootSpec, rollEnemyLoot, canEquipWeapon, itemStatDelta, formatStatDelta, getEquippedPassives, getEquippedProcs } from './items.js';
 import { DIALOGS, QUEST_TEXT } from './quests.js';
 import { UI } from './ui.js';
 import { SFX, playMusic, stopMusic, initAudio } from './audio.js';
@@ -291,7 +291,9 @@ class Game {
     // spawn enemies (host authority; guests will be synced if host present)
     for (const ed of def.enemies) {
       if (ed.boss && this.flags.warden_dead) continue;
-      const e = this.scaledEnemy(ed.type, ed.x, ed.y);
+      const e = ed.type === 'dummy'
+        ? new Enemy(ed.type, ed.x, ed.y)
+        : this.scaledEnemy(ed.type, ed.x, ed.y);
       this.scene.add(e.sprite.group);
       this.enemies.push(e);
     }
@@ -979,15 +981,16 @@ class Game {
   openShopFor(kind) {
     const lvl = this.player.level;
     const klass = this.player.klass;
-    if (kind === 'shop') this.ui.openShop('VALE GOODS', shopStock(klass, lvl));
-    else if (kind === 'smith') this.ui.openShop("BRAM'S FORGE", smithStock(klass, lvl));
-    else if (kind === 'armory') this.ui.openShop('ASHFALL ARMORY', armoryStock(klass, lvl));
+    const mapId = this.mapId;
+    if (kind === 'shop') this.ui.openShop('VALE GOODS', shopStock(klass, lvl, mapId));
+    else if (kind === 'smith') this.ui.openShop("BRAM'S FORGE", smithStock(klass, lvl, mapId));
+    else if (kind === 'armory') this.ui.openShop('ASHFALL ARMORY', armoryStock(klass, lvl, mapId));
   }
 
   giveLoot(spec, srcProp, opts = {}) {
     const p = this.player;
     const pos = srcProp ? new THREE.Vector3(srcProp.x + 0.5, 0, srcProp.y + 1.4) : p.pos.clone();
-    const drops = resolveLootSpec(spec, p);
+    const drops = resolveLootSpec(spec, p, { mapId: this.mapId });
     const direct = !!opts.direct;
     if (!drops.length) {
       const [kind, val] = spec.split(':');
@@ -1453,11 +1456,23 @@ class Game {
     }
     this.recordEnemyDamage(enemy, this.net.connected ? this.net.id : 'local');
     const died = enemy.hit(final, this, knock, crit, { ragdoll: doRag, light });
+    if (!died) this.applyItemProcsOnHit(enemy, crit);
     if (ctx) this.treeOnHit(enemy, ctx, crit, ambush, died, final);
     if (died) this.killEnemy(enemy);
   }
 
   /* ============ skill-tree effect helpers ============ */
+  applyItemProcsOnHit(enemy, crit) {
+    for (const proc of getEquippedProcs(this.player.equip)) {
+      if (proc.trigger === 'hit' && proc.status && Math.random() < (proc.chance ?? 1)) {
+        enemy.addStatus(proc.status, proc.dur ?? 3);
+      }
+      if (crit && proc.trigger === 'crit' && proc.status) {
+        enemy.addStatus(proc.status, proc.dur ?? 3);
+      }
+    }
+  }
+
   // pre-cast: buffs, vacuums, self-placed hazards, Vanguard's primed Sunder
   preCast(ctx, p, fdx, fdz) {
     if (ctx.skillId === 'cleave' && p.nextCleaveSunder) { ctx.apply.push({ status: 'sunder', dur: 5 }); p.nextCleaveSunder = false; }
@@ -1662,41 +1677,57 @@ class Game {
       pr.mesh = null;
       if (pr.solidDyn) pr.solidDyn.active = false; // destroyed dummies stop blocking
       SFX.enemyDie();
-      if (this.flags.stage === 1) {
-        this.flags.dummies_n = (this.flags.dummies_n || 0) + 1;
-        this.updateQuestUI();
-        if (this.flags.dummies_n >= 3) {
-          this.toast('Training complete! See BRAM at the smithy.', true);
-          this.setStage(2);
-        }
+      this.onDummyDestroyed();
+    }
+  }
+
+  onDummyDestroyed() {
+    if (this.flags.stage === 1) {
+      this.flags.dummies_n = (this.flags.dummies_n || 0) + 1;
+      this.updateQuestUI();
+      if (this.flags.dummies_n >= 3) {
+        this.toast('Training complete! See BRAM at the smithy.', true);
+        this.setStage(2);
       }
     }
   }
 
   killEnemy(enemy) {
+    const training = enemy.def.training || enemy.type === 'dummy';
     SFX.enemyDie();
-    // skill-tree on-kill: Open Season (spread Mark) and Acrobat (refresh mobility)
     const p = this.player;
-    if (playerFx(p, 'markSpread') && enemy.hasStatus('mark')) {
-      const r = playerFx(p, 'markSpread');
-      for (const e of this.enemies) {
-        if (!e.dead && e !== enemy && e.pos.distanceTo(enemy.pos) < r) e.addStatus('mark', 6);
+    if (!training) {
+      // skill-tree on-kill: Open Season (spread Mark) and Acrobat (refresh mobility)
+      if (playerFx(p, 'markSpread') && enemy.hasStatus('mark')) {
+        const r = playerFx(p, 'markSpread');
+        for (const e of this.enemies) {
+          if (!e.dead && e !== enemy && e.pos.distanceTo(enemy.pos) < r) e.addStatus('mark', 6);
+        }
       }
+      if (playerFx(p, 'refreshOnKillDuringIframes') && p.iframes > 0) {
+        p.cooldowns[CLASSES[p.klass].mobility.id] = 0;
+      }
+      this.fx.xpAbsorb(enemy.pos, this.player.pos, enemy.def.xp);
+      this.player.addXp(enemy.def.xp, this);
+      // kill_surge: kill within 1.5s of a skill hit grants +4% crit for 4s
+      const passives = getEquippedPassives(this.player.equip);
+      if (passives.has('kill_surge') && this.player.lastSkillHitT > 0) {
+        this.player.critSurgeT = 4.0;
+      }
+      this.rollLoot(enemy);
     }
-    if (playerFx(p, 'refreshOnKillDuringIframes') && p.iframes > 0) {
-      p.cooldowns[CLASSES[p.klass].mobility.id] = 0;
-    }
-    this.fx.xpAbsorb(enemy.pos, this.player.pos, enemy.def.xp);
     this.scene.remove(enemy.sprite.group);
     this.enemies = this.enemies.filter(e => e !== enemy);
-    this.player.addXp(enemy.def.xp, this);
-    // kill_surge: kill within 1.5s of a skill hit grants +4% crit for 4s
-    const passives = getEquippedPassives(this.player.equip);
-    if (passives.has('kill_surge') && this.player.lastSkillHitT > 0) {
-      this.player.critSurgeT = 4.0;
+    if (training) {
+      this.onDummyDestroyed();
+      if (this.net.connected) {
+        this.net.sendEvent('enemyDie', {
+          eid: enemy.id, x: enemy.pos.x, z: enemy.pos.z, type: enemy.type, map: this.mapId,
+          damagers: [], xp: 0,
+        });
+      }
+      return;
     }
-    // instanced loot (each client rolls own on death event)
-    this.rollLoot(enemy);
     const damagers = [...(enemy.damagers || [])];
     if (this.net.connected && !damagers.includes(this.net.id)) damagers.push(this.net.id);
     this.net.sendEvent('enemyDie', {
@@ -1717,9 +1748,10 @@ class Game {
 
   rollLoot(enemy) {
     const t = enemy.def;
+    if (t.training || enemy.type === 'dummy') return;
     const gold = t.gold[0] + ((Math.random() * (t.gold[1] - t.gold[0])) | 0);
     this.spawnDrop('gold', gold, enemy.pos);
-    const extra = rollEnemyLoot(enemy.type, this.player.klass, this.player.level);
+    const extra = rollEnemyLoot(enemy.type, this.player.klass, this.player.level, this.mapId);
     if (extra) {
       for (const d of extra) this.spawnDrop(d.kind, d.data, enemy.pos);
     }
@@ -2148,14 +2180,15 @@ class Game {
         const e = this.enemies.find(x => x.id === msg.eid);
         const pos = e?.pos ?? new THREE.Vector3(msg.x, 0, msg.z);
         const def = e?.def ?? ENEMY_TYPES[msg.type];
+        const training = def?.training || msg.type === 'dummy' || !def?.xp;
         const damagers = msg.damagers || [];
-        const rewarded = damagers.includes(this.net.id);
+        const rewarded = !training && damagers.includes(this.net.id);
         if (rewarded && !this.net.isHost) {
           this.fx.xpAbsorb(pos, this.player.pos, def.xp);
           SFX.enemyDie();
           this.player.addXp(def.xp, this);
           this.rollLoot({ pos, def, type: msg.type });
-        } else if (!rewarded) {
+        } else {
           SFX.enemyDie();
         }
         if (e) {
