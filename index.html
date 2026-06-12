@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASHEN VALE</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div id="game-root">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- HUD -->
+    <div id="hud" class="hidden">
+      <div id="hud-top-left">
+        <div id="hp-bar" class="bar"><div id="hp-fill" class="fill"></div><span id="hp-text"></span></div>
+        <div id="mp-bar" class="bar"><div id="mp-fill" class="fill"></div><span id="mp-text"></span></div>
+        <div id="xp-bar" class="bar thin"><div id="xp-fill" class="fill"></div></div>
+        <div id="hud-info"><span id="hud-level"></span> <span id="hud-gold"></span></div>
+      </div>
+      <div id="hud-area-name"></div>
+      <div id="quest-tracker"></div>
+      <div id="hotbar">
+        <div class="slot" data-slot="0"><span class="key">LMB</span><canvas width="40" height="40"></canvas><div class="cd"></div></div>
+        <div class="slot" data-slot="1"><span class="key">RMB</span><canvas width="40" height="40"></canvas><div class="cd"></div></div>
+        <div class="slot" data-slot="2"><span class="key">SPACE</span><canvas width="40" height="40"></canvas><div class="cd"></div></div>
+        <div class="slot" data-slot="3"><span class="key">SHIFT</span><canvas width="40" height="40"></canvas><div class="cd"></div></div>
+        <div class="slot" data-slot="potion"><span class="key">Q</span><canvas width="40" height="40"></canvas><div id="potion-count"></div></div>
+      </div>
+      <div id="interact-prompt" class="hidden"></div>
+      <div id="boss-bar" class="hidden"><div id="boss-name"></div><div class="bar"><div id="boss-fill" class="fill"></div></div></div>
+      <div id="coop-hud" class="hidden">
+        <div id="coop-status-line"></div>
+        <div id="coop-world-note">world progress · host</div>
+      </div>
+      <div id="party-strip"></div>
+      <div id="revive-prompt" class="hidden"></div>
+    </div>
+
+    <!-- Dialog box -->
+    <div id="dialog-box" class="hidden">
+      <div id="dialog-name"></div>
+      <div id="dialog-text"></div>
+      <div id="dialog-hint">[E] or CLICK ▼</div>
+    </div>
+
+    <!-- Inventory / Character panel -->
+    <div id="panel" class="hidden">
+      <div id="panel-tabs">
+        <button data-tab="inventory" class="active">INVENTORY [I]</button>
+        <button data-tab="skills">SKILLS [K]</button>
+      </div>
+      <div id="panel-inventory" class="panel-page">
+        <div id="equip-slots">
+          <div class="equip-slot" data-eq="weapon"><label>WEAPON</label><div class="item-cell"></div></div>
+          <div class="equip-slot" data-eq="armor"><label>ARMOR</label><div class="item-cell"></div></div>
+          <div class="equip-slot" data-eq="trinket"><label>TRINKET</label><div class="item-cell"></div></div>
+        </div>
+        <div id="char-stats"></div>
+        <div id="inv-grid"></div>
+      </div>
+      <div id="panel-skills" class="panel-page hidden">
+        <div id="skill-points"></div>
+        <div id="skill-tree"></div>
+        <div id="node-detail" class="hidden"></div>
+      </div>
+      <div id="item-tooltip" class="hidden"></div>
+    </div>
+
+    <!-- Level-up upgrade picker -->
+    <div id="levelup-modal" class="hidden">
+      <div id="levelup-card">
+        <div id="levelup-head">
+          <div id="levelup-title">LEVEL UP</div>
+          <div id="levelup-sub">Choose an upgrade</div>
+        </div>
+        <div id="levelup-choices"></div>
+        <div id="levelup-foot">
+          <button id="levelup-confirm" disabled>CONFIRM</button>
+          <button id="levelup-later">DECIDE LATER [K]</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shop -->
+    <div id="shop" class="hidden">
+      <div id="shop-title"></div>
+      <div id="shop-items"></div>
+      <div id="shop-hint"><span>[↑↓] select</span><span>[E] buy</span><span>[ESC] close</span><span id="shop-gold"></span></div>
+    </div>
+
+    <!-- Title screen -->
+    <div id="title-screen">
+      <div id="title-art">
+        <h1>ASHEN&nbsp;VALE</h1>
+        <div id="title-sub">~ a tale of the hollow road ~</div>
+        <div id="title-pitch">Zelda exploration · Diablo loot · optional co-op</div>
+      </div>
+      <div id="save-slots">
+        <button type="button" class="save-slot" data-slot="0"><span class="slot-num">I</span><span class="slot-info">EMPTY</span></button>
+        <button type="button" class="save-slot" data-slot="1"><span class="slot-num">II</span><span class="slot-info">EMPTY</span></button>
+        <button type="button" class="save-slot" data-slot="2"><span class="slot-num">III</span><span class="slot-info">EMPTY</span></button>
+      </div>
+      <div id="class-select">
+        <div class="class-card" data-class="knight">
+          <canvas width="96" height="96"></canvas>
+          <h3>KNIGHT</h3>
+          <p>Sword &amp; steel. Trades range for raw arm and a shield to charge behind.</p>
+          <div class="card-keys">SLASH · CLEAVE · WHIRLWIND<br>SHIELD RUSH</div>
+        </div>
+        <div class="class-card" data-class="ranger">
+          <canvas width="96" height="96"></canvas>
+          <h3>RANGER</h3>
+          <p>Swift bow from the deep woods. Keep your distance, the arrows do the rest.</p>
+          <div class="card-keys">QUICK SHOT · POWER SHOT · MULTISHOT<br>TUMBLE</div>
+        </div>
+        <div class="class-card" data-class="mage">
+          <canvas width="96" height="96"></canvas>
+          <h3>MAGE</h3>
+          <p>Old magic of the vale. Fragile, but the dark bends around a good spark.</p>
+          <div class="card-keys">SPARK · SPARK BOLT · NOVA<br>BLINK</div>
+        </div>
+      </div>
+      <div id="title-coop-panel" class="hidden">
+        <div class="coop-panel-head">ONLINE CO-OP</div>
+        <div class="coop-fields">
+          <label>ROOM<input type="text" id="coop-room" placeholder="room name" value="vale" maxlength="24" /></label>
+          <label>NAME<input type="text" id="coop-name" placeholder="hero name" maxlength="10" /></label>
+          <label>SERVER<input type="text" id="coop-server" placeholder="ws://host:8081" /></label>
+        </div>
+        <p class="coop-note">Bring your save · world gates follow the host · leave SERVER blank for the hosted relay</p>
+      </div>
+      <div id="title-buttons">
+        <button id="btn-solo" disabled>PLAY SOLO</button>
+        <button id="btn-coop" disabled>PLAY CO-OP</button>
+      </div>
+      <div id="title-slot-hint">Choose a save slot to begin</div>
+      <div id="title-controls">
+        <span><kbd>WASD</kbd> move</span>
+        <span><kbd>L-CLICK</kbd> attack</span>
+        <span><kbd>R-CLICK</kbd> skill</span>
+        <span><kbd>SPACE</kbd> skill</span>
+        <span><kbd>SHIFT</kbd> mobility</span>
+        <span><kbd>E</kbd> interact</span>
+        <span><kbd>Q</kbd> tonic</span>
+        <span><kbd>I</kbd> inventory</span>
+        <span><kbd>K</kbd> skills</span>
+      </div>
+    </div>
+
+    <!-- Death / End screens -->
+    <div id="downed-overlay" class="hidden">
+      <div id="downed-card">
+        <div id="downed-title">DOWNED</div>
+        <div id="downed-ring"><svg viewBox="0 0 64 64"><circle class="ring-bg" cx="32" cy="32" r="28" /><circle id="downed-ring-fill" class="ring-fill" cx="32" cy="32" r="28" /></svg></div>
+        <div id="downed-timer">15</div>
+        <p id="downed-hint">Hold on — an ally can revive you with <kbd>E</kbd></p>
+        <p id="downed-revives"></p>
+      </div>
+    </div>
+    <div id="death-screen" class="hidden">
+      <h1 id="death-title">YOU FELL...</h1>
+      <p id="death-text">The vale claims another. But the bell of Eldermoor calls you back.</p>
+      <button id="btn-respawn">RISE AGAIN</button>
+    </div>
+    <div id="end-screen" class="hidden">
+      <h1>ASHFALL GATES</h1>
+      <p id="end-text"></p>
+      <p class="small">— the city is yours — talk to CAPTAIN HALE at the gate —</p>
+      <button id="btn-end-continue">ENTER THE CITY</button>
+    </div>
+
+    <div id="toast-container"></div>
+    <div id="vignette"></div>
+    <div id="scanlines"></div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "ashen-vale",
+  "version": "0.1.0",
+  "description": "Ashen Vale - a monochrome 2.5D action RPG demo with online coop",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "server": "node server.js",
+    "start": "node server.js & vite",
+    "viewer": "vite --open /tools/sprite-viewer/"
+  },
+  "dependencies": {
+    "three": "^0.165.0",
+    "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "vite": "^5.3.0"
+  }
+}

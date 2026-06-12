@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "rewrites": [
+    { "source": "/sprite-viewer", "destination": "/tools/sprite-viewer/" },
+    { "source": "/sprite-viewer/", "destination": "/tools/sprite-viewer/" }
+  ]
+}

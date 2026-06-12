@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASHEN VALE — Sprite Viewer</title>
+  <link rel="stylesheet" href="/tools/sprite-viewer/style.css" />
+</head>
+<body>
+  <div id="viewer-root">
+    <header id="viewer-header">
+      <h1>ASHEN VALE</h1>
+      <span class="subtitle">SPRITE VIEWER</span>
+      <a href="/" class="back-link">← BACK TO GAME</a>
+    </header>
+
+    <aside id="sidebar">
+      <div class="sidebar-section">
+        <label class="field-label">SEARCH</label>
+        <input id="search" type="text" placeholder="Filter sprites…" autocomplete="off" spellcheck="false" />
+      </div>
+
+      <div class="sidebar-section">
+        <label class="field-label">CATEGORY</label>
+        <div id="category-tabs" class="tab-row"></div>
+      </div>
+
+      <div id="patch-group-section" class="sidebar-section hidden">
+        <label class="field-label">PATCH GROUP</label>
+        <div id="patch-group-tabs" class="tab-row"></div>
+      </div>
+
+      <div id="sprite-grid" class="sprite-grid"></div>
+      <div id="grid-count" class="grid-count"></div>
+    </aside>
+
+    <main id="preview-panel">
+      <div id="preview-toolbar">
+        <div class="toolbar-group">
+          <span class="field-label">FRAME</span>
+          <div id="frame-tabs" class="tab-row small"></div>
+        </div>
+        <div class="toolbar-group">
+          <span class="field-label">ZOOM</span>
+          <button class="btn icon" data-zoom="out" title="Zoom out (−)">−</button>
+          <input id="zoom-slider" type="range" min="1" max="32" value="8" />
+          <button class="btn icon" data-zoom="in" title="Zoom in (+)">+</button>
+          <span id="zoom-label" class="zoom-label">8×</span>
+          <div class="zoom-presets">
+            <button class="btn preset" data-zoom-val="4">4×</button>
+            <button class="btn preset" data-zoom-val="8">8×</button>
+            <button class="btn preset" data-zoom-val="16">16×</button>
+          </div>
+        </div>
+        <div class="toolbar-group">
+          <button id="btn-reset-view" class="btn" title="Reset pan & zoom (R)">RESET VIEW</button>
+          <button id="btn-copy-png" class="btn primary" title="Copy PNG (Ctrl+C)">COPY PNG</button>
+          <button id="btn-download" class="btn" title="Download PNG">DOWNLOAD</button>
+        </div>
+      </div>
+
+      <div id="preview-stage">
+        <div id="preview-hint">Drag to move · Scroll to zoom · Click a sprite to select</div>
+        <canvas id="preview-canvas"></canvas>
+      </div>
+
+      <div id="sprite-info">
+        <div id="info-name">—</div>
+        <div id="info-meta">Select a sprite from the gallery</div>
+      </div>
+
+      <div id="palette-bar">
+        <span class="field-label">PALETTE</span>
+        <div id="palette-swatches"></div>
+      </div>
+    </main>
+  </div>
+
+  <div id="scanlines"></div>
+  <div id="toast" class="hidden"></div>
+
+  <script type="module" src="/tools/sprite-viewer/main.js"></script>
+</body>
+</html>
