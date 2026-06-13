@@ -2855,6 +2855,7 @@ const DEBUG_TOWNS = [
   { id: 'ashfall',   name: 'ASHFALL',   x: 22,   z: 32.5 }, // Ch.2 ash city
   { id: 'briarfen',  name: 'BRIARFEN',  x: 23.5, z: 33.5 }, // Ch.3 thornwood town
   { id: 'tidehaven', name: 'TIDEHAVEN', x: 3,    z: 40   }, // Ch.4 port town
+  { id: 'testcity',  name: 'DEVHOLM',   x: 20,   z: 20   }, // debug-only test city
 ];
 let _debugMenu = null;
 function buildDebugMenu() {

@@ -1119,6 +1119,163 @@ function buildTabbHouse() {
   });
 }
 
+/* =========================================================
+   DEVHOLM — debug-only test city  (40 x 34)
+   Not linked from any world map; reachable only via the debug
+   teleporter (press 0). A sandbox for trying out house designs.
+   ========================================================= */
+function buildTestCity() {
+  const g = G(40, 34, '.');
+  scatter(g, ':', 90, 777, '.');
+  // tree border (double ring)
+  rect(g, 0, 0, 40, 2, '#'); rect(g, 0, 32, 40, 2, '#');
+  rect(g, 0, 0, 2, 34, '#'); rect(g, 38, 0, 2, 34, '#');
+  scatter(g, '#', 16, 778, '.:');
+  scatter(g, 'f', 12, 779, '.:');
+
+  // central plaza + cross of roads
+  rect(g, 15, 13, 11, 7, 'p');
+  rect(g, 19, 2, 2, 30, 'p');       // N–S spine
+  rect(g, 2, 16, 36, 2, 'p');       // E–W avenue
+  // flower beds at the plaza corners
+  rect(g, 16, 13, 2, 2, 'f'); rect(g, 24, 13, 2, 2, 'f');
+  rect(g, 16, 18, 2, 2, 'f'); rect(g, 24, 18, 2, 2, 'f');
+
+  // four house footprints, one per quadrant — each a distinct design
+  const buildings = [
+    { x: 4,  y: 4,  w: 10, h: 7, door: { x: 8,  y: 10 }, label: 'GLASSHOUSE', to: 'tc_glasshouse' },
+    { x: 26, y: 4,  w: 10, h: 7, door: { x: 30, y: 10 }, label: 'FORGE-LOFT', to: 'tc_forge' },
+    { x: 4,  y: 24, w: 10, h: 7, door: { x: 8,  y: 30 }, label: 'LANTERN LIBRARY', to: 'tc_library' },
+    { x: 26, y: 24, w: 10, h: 7, door: { x: 30, y: 30 }, label: 'THE MENAGERIE', to: 'tc_menagerie', style: 'thorn' },
+  ];
+  for (const b of buildings) rect(g, b.x, b.y, b.w, b.h, '.');
+  // door spokes — every door spills onto a road, no dead-ends
+  rect(g, 8,  10, 2, 7,  'p');      // glasshouse → avenue
+  rect(g, 29, 10, 2, 7,  'p');      // forge-loft → avenue
+  rect(g, 8,  17, 2, 15, 'p');      // library → avenue (apron reaches the exit tile)
+  rect(g, 29, 17, 2, 15, 'p');      // menagerie → avenue
+
+  return {
+    id: 'testcity', name: 'DEVHOLM', grid: g, ambient: 'day', music: 'town',
+    buildings,
+    portals: [], // intentionally isolated — debug teleport only
+    props: [
+      { type: 'fountain', x: 20, y: 16.5 },
+      { type: 'lamp', x: 15, y: 13 }, { type: 'lamp', x: 25, y: 13 },
+      { type: 'lamp', x: 15, y: 19 }, { type: 'lamp', x: 25, y: 19 },
+      { type: 'bench', x: 18, y: 19 }, { type: 'bench', x: 22, y: 19 },
+      { type: 'sign', x: 20, y: 12, text: 'DEVHOLM — debug sandbox. Four houses, four designs. Mind the seams.' },
+      { type: 'sign', x: 9,  y: 16, text: 'NW: GLASSHOUSE · NE: FORGE-LOFT · SW: LANTERN LIBRARY · SE: MENAGERIE' },
+      { type: 'crate', x: 3, y: 3 }, { type: 'pot', x: 36, y: 3 },
+      { type: 'barrel', x: 3, y: 30 }, { type: 'pot', x: 36, y: 30 },
+    ],
+    npcs: [
+      { id: 'tc_keeper', sprite: 'elder', x: 20, y: 14, dir: 'down', dialog: 'villager1' },
+    ],
+    enemies: [
+      { type: 'dummy', x: 14, y: 25 },
+    ],
+  };
+}
+
+/* ---------- DEVHOLM interiors — four unique house designs ---------- */
+
+// 1) THE GLASSHOUSE — an indoor garden under glass. Grass floor, a koi
+//    pond you can fish, flower beds and tall grass. The "house" is a biome.
+function buildTcGlasshouse() {
+  return interior('tc_glasshouse', 'THE GLASSHOUSE', 15, 12, '.', (g, def) => {
+    // central koi pond with a sandy rim
+    rect(g, 6, 4, 4, 3, 'w');
+    frame(g, 5, 3, 6, 5, 's');
+    // planting beds banked along the walls
+    rect(g, 1, 1, 13, 1, 'f');
+    rect(g, 1, 9, 2, 2, ',');  rect(g, 12, 9, 2, 2, ',');
+    rect(g, 2, 4, 1, 4, 'f');  rect(g, 12, 4, 1, 4, 'f');
+    // exit stairs (south wall, centre)
+    set(g, 7, 11, 'S'); set(g, 8, 11, 'S');
+    def.portals.push({ x: 7, y: 11, w: 2, h: 1, to: 'testcity', tx: 8.5, ty: 11.5 });
+    def.props.push(
+      { type: 'fishspot', x: 8, y: 5 },
+      { type: 'plant', x: 1, y: 4 }, { type: 'plant', x: 13, y: 4 },
+      { type: 'plant', x: 1, y: 7 }, { type: 'plant', x: 13, y: 7 },
+      { type: 'plant', x: 3, y: 2 }, { type: 'plant', x: 11, y: 2 },
+      { type: 'basket', x: 2, y: 9 }, { type: 'basket', x: 12, y: 10 },
+      { type: 'bench', x: 6, y: 9 }, { type: 'bench', x: 9, y: 9 },
+      { type: 'sign', x: 5, y: 9, text: 'Under glass it is always the first warm day of spring. The koi disagree, loudly, about everything.' },
+    );
+  });
+}
+
+// 2) THE FORGE-LOFT — a working smithy. Stone floor, central anvil island,
+//    a wall of fire and weapon racks. Hot, dense, industrial.
+function buildTcForge() {
+  return interior('tc_forge', 'THE FORGE-LOFT', 13, 11, 't', (g, def) => {
+    // forge wall (stone block) along the north, with the hearth set into it
+    rect(g, 2, 1, 9, 2, 'W');
+    // a tool rug marking the anvil island
+    rect(g, 5, 5, 3, 2, 'm');
+    set(g, 6, 10, 'S'); set(g, 7, 10, 'S');
+    def.portals.push({ x: 6, y: 10, w: 2, h: 1, to: 'testcity', tx: 30.5, ty: 11.5 });
+    def.props.push(
+      { type: 'fireplace', x: 6, y: 1 },
+      { type: 'anvil', x: 6, y: 5 }, { type: 'anvil', x: 5, y: 6 },
+      { type: 'rack', x: 1, y: 1 }, { type: 'rack', x: 11, y: 1 },
+      { type: 'rack', x: 11, y: 4 }, { type: 'rack', x: 11, y: 7 },
+      { type: 'barrel', x: 1, y: 4 }, { type: 'barrel', x: 1, y: 7 },
+      { type: 'crate', x: 2, y: 8 }, { type: 'crate', x: 10, y: 8 }, { type: 'crate', x: 1, y: 8 },
+      { type: 'sign', x: 9, y: 5, text: 'FORGE-LOFT. Two anvils: one for iron, one for arguments. Both ring the same.' },
+    );
+  });
+}
+
+// 3) THE LANTERN LIBRARY — a tall reading room. Wood floor, bookshelf stacks
+//    forming aisles, lamps between them and a fireside reading nook.
+function buildTcLibrary() {
+  return interior('tc_library', 'THE LANTERN LIBRARY', 14, 12, 'o', (g, def) => {
+    // a carpeted reading nook in the SE corner
+    rect(g, 9, 7, 4, 3, 'm');
+    set(g, 6, 11, 'S'); set(g, 7, 11, 'S');
+    def.portals.push({ x: 6, y: 11, w: 2, h: 1, to: 'testcity', tx: 8.5, ty: 31.5 });
+    // bookshelf stacks form two interior aisles
+    const shelfRows = [2, 5];
+    for (const sy of shelfRows) {
+      for (const sx of [2, 3, 5, 6, 8, 9]) {
+        def.props.push({ type: 'bookshelf', x: sx, y: sy });
+      }
+    }
+    def.props.push(
+      { type: 'fireplace', x: 11, y: 1 },
+      { type: 'lamp', x: 4, y: 3 }, { type: 'lamp', x: 7, y: 3 }, { type: 'lamp', x: 10, y: 3 },
+      { type: 'lamp', x: 4, y: 6 }, { type: 'lamp', x: 7, y: 6 },
+      { type: 'table', x: 10, y: 8 }, { type: 'stool', x: 11, y: 9 }, { type: 'stool', x: 9, y: 9 },
+      { type: 'plant', x: 1, y: 1 }, { type: 'plant', x: 12, y: 10 },
+      { type: 'bookshelf', x: 1, y: 8 }, { type: 'bookshelf', x: 1, y: 9 },
+      { type: 'sign', x: 9, y: 7, text: 'LANTERN LIBRARY — silence enforced by the lamps. They flicker at gossip.' },
+    );
+  });
+}
+
+// 4) THE MENAGERIE — a cat sanctuary. Carpeted, ringed with beds and baskets,
+//    a little indoor flower patch, and cats. So many cats.
+function buildTcMenagerie() {
+  return interior('tc_menagerie', 'THE MENAGERIE', 13, 10, 'm', (g, def) => {
+    // a sunny flower patch in the middle for the cats to ignore
+    rect(g, 5, 4, 3, 2, 'f');
+    set(g, 6, 9, 'S'); set(g, 7, 9, 'S');
+    def.portals.push({ x: 6, y: 9, w: 2, h: 1, to: 'testcity', tx: 30.5, ty: 31.5 });
+    def.props.push(
+      { type: 'bed', x: 1, y: 1 }, { type: 'bed', x: 1, y: 4 }, { type: 'bed', x: 11, y: 1 },
+      { type: 'basket', x: 3, y: 1 }, { type: 'basket', x: 9, y: 1 }, { type: 'basket', x: 10, y: 7 },
+      { type: 'cat', id: 'tc_cat1', x: 2, y: 2 },
+      { type: 'cat', id: 'tc_cat2', x: 11, y: 2 },
+      { type: 'cat', id: 'tc_cat3', x: 9, y: 6 },
+      { type: 'cat', id: 'tc_cat4', x: 4, y: 7 },
+      { type: 'plant', x: 11, y: 4 }, { type: 'plant', x: 1, y: 7 },
+      { type: 'sign', x: 6, y: 6, text: 'THE MENAGERIE. House rules: the cats make the rules. There are no other rules.' },
+    );
+  });
+}
+
 export function buildAllMaps() {
   const maps = {};
   for (const m of [
@@ -1128,6 +1285,7 @@ export function buildAllMaps() {
     buildRouteClaim(), buildClaimCave(), buildRouteThornwood(), buildBriarfen(),
     buildBriarfenApoth(), buildBriarfenInn(), buildBriarfenCompact(),
     buildRouteSiltDescent(), buildTidehaven(),
+    buildTestCity(), buildTcGlasshouse(), buildTcForge(), buildTcLibrary(), buildTcMenagerie(),
   ]) {
     maps[m.id] = m;
   }
