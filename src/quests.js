@@ -13,6 +13,12 @@ export const QUEST_TEXT = {
   ] },
   5: { title: 'GATES OF ASHFALL', objs: [{ id: 'ashfall', text: 'Pass the western gate to Ashfall' }] },
   6: { title: 'ASHFALL', objs: [{ id: 'roam', text: 'Explore Ashfall — the Pit, the pond, the shrine, the lost cat.' }] },
+  7: { title: 'DEPART ASHFALL', objs: [{ id: 'route_claim', text: 'Follow the Consolidated Mining lease road north (north gate, ASHFALL)' }] },
+  8: { title: 'CLAIM ROAD', objs: [{ id: 'cave_entry', text: 'Reach the CONTRACT CAVE mouth at the road\'s end' }] },
+  9: { title: 'CONTRACT CAVE', objs: [{ id: 'gem_vault', text: 'Descend to the gem vault at the cave\'s heart' }] },
+  10: { title: 'THE LUMEN GEM', objs: [{ id: 'rival_met', text: 'Approach the LUMEN GEM — someone is already there' }] },
+  11: { title: 'THE GLITCH', objs: [{ id: 'glitch_done', text: 'The vale has changed. Something cracked open. Find Briarfen.' }] },
+  12: { title: 'THORNWOOD ROAD', objs: [{ id: 'reach_briarfen', text: 'Follow the thornwood verge north to BRIARFEN' }] },
 };
 
 // Each dialog: (game) => array of { name, text } pages; optional onDone(game).
@@ -211,4 +217,173 @@ export const DIALOGS = {
   penny: () => ({ pages: [{ name: 'PENNY', text: 'I touched the big gate once and Captain Hale whistled at me SO loud. Anyway there\'s a charm behind the tavern. Probably. I\'m not allowed back there.' }] }),
   hob: () => ({ pages: [{ name: 'HOB', text: 'Stall\'s been slow since the road sealed. You\'re the one who opened it? Best news all year. Tell your friends. Tell their friends.' }] }),
   lira: () => ({ pages: [{ name: 'LIRA', text: 'Little bells ring all over this city at night — lost charms, five of them. The shrine misses them, if you ask me. Nobody asks me.' }] }),
+
+  /* ================= POST-DEMO: ASHFALL (late Ch.2) ================= */
+
+  voss_recruiter: (g) => {
+    if (g.flags.contract_accepted) return {
+      pages: [{ name: 'CMC REP', text: 'Contract\'s on file. North gate\'s yours. Stay on the lease road — we don\'t reimburse incidents.' }],
+    };
+    if (g.flags.stage < 6) return {
+      pages: [{ name: 'CMC REP', text: 'CONSOLIDATED MINING CO. Contract work available. Come back when you\'ve had a proper look at the city.' }],
+    };
+    return {
+      pages: [
+        { name: 'CMC REP', text: 'CONSOLIDATED MINING CO. We have an extraction escort — north of the city, CONTRACT CAVE, one registered claimant to retrieve.' },
+        { name: 'CMC REP', text: 'Pay is standard. Risk is non-standard. Director Voss will meet you at the claim. Sign here.' },
+        { name: 'CMC REP', text: 'Terms: escort the survey team, secure the extraction zone, intervene if the claim is contested. Feelings are not billable.' },
+      ],
+      onDone: (g) => {
+        g.flags.contract_accepted = true;
+        g.setStage(7);
+      },
+    };
+  },
+
+  lace_ashfall: (g) => {
+    if (g.flags.stage < 6) return {
+      pages: [{ name: 'LACE HARROW', text: 'Thornroot. Two bundles. Don\'t you have somewhere to be.' }],
+    };
+    return {
+      pages: [{ name: 'LACE HARROW', text: 'Thorn contracts don\'t expire. Neither do I. Don\'t browse if you\'re not buying.' }],
+    };
+  },
+
+  /* ================= CLAIM ROAD ================= */
+
+  road_miner_a: () => ({
+    pages: [{ name: 'COBB', text: 'Three days on this road, ash in everything. Boots, lunch, hair. The beetles don\'t mind. Beetles like ash.' }],
+  }),
+
+  road_miner_b: (g) => ({
+    pages: [{ name: 'NESSA', text: g.flags.stage >= 8
+      ? 'Cave mouth\'s just north. Mind the low ceiling and the foreman — both bite.'
+      : 'Stay left of the barbed wire — it\'s not on the survey map but it\'ll find you anyway.' }],
+  }),
+
+  road_miner_c: () => ({
+    pages: [{ name: 'FOREMAN GRUT', text: 'Gem vault\'s at the deep end. Two hours down if the beetles cooperate. They haven\'t cooperated since Tuesday.' }],
+  }),
+
+  /* ================= CONTRACT CAVE ================= */
+
+  miner1: (g) => {
+    if (g.flags.rival_state === 'met') return {
+      pages: [{ name: 'DOVO', text: 'The deep went wrong. We\'re staying near the exit until the foreman says otherwise.' }],
+    };
+    return {
+      pages: [
+        { name: 'DOVO', text: 'Something is in the gem vault. Not us — we stopped going deeper two shifts ago.' },
+        { name: 'DOVO', text: 'Whatever it is, it doesn\'t eat our lunch. That\'s the threshold for concern around here.' },
+      ],
+    };
+  },
+
+  miner2: (g) => {
+    if (g.flags.rival_state === 'met') return {
+      pages: [{ name: 'PELL', text: 'You made it back. The vault lit up and then went quiet. I don\'t like quiet.' }],
+    };
+    return {
+      pages: [
+        { name: 'PELL', text: 'Lights at the deep end. Blue-white. Not candle-color.' },
+        { name: 'PELL', text: 'Foreman says it\'s refracted quartz. Foreman hasn\'t been below the foyer since day one.' },
+      ],
+    };
+  },
+
+  /* ================= RIVAL / VOSS SCENE (gem vault) ================= */
+
+  rival: (g) => {
+    if (g.flags.rival_state === 'met') return {
+      pages: [{ name: '???', text: 'Don\'t touch the gem again. We already know what it does.' }],
+    };
+    return {
+      pages: [
+        { name: '???', text: 'You\'re the bodyguard. I\'m the problem. Try not to die — it\'d ruin my evening.' },
+        { name: '???', text: 'The gem is right there. Light that doesn\'t belong in the vale. Interesting thing for a mine to find.' },
+        { name: '???', text: 'I\'ve crossed enough claims to know this one won\'t close clean. Force of habit.' },
+        { name: 'DIRECTOR VOSS', text: 'Ah. Both parties at the gem. Efficient. The ledger approves even when I don\'t.' },
+        { name: 'DIRECTOR VOSS', text: 'That\'s the claimant I mentioned. You\'re on my lease. The clause is INTERVENTION. Do your job.' },
+        { name: '???', text: 'Your employer smiles like a ledger. How fitting.' },
+        { name: '???', text: '...Come on, then. The contract requires it.' },
+      ],
+      onDone: (g) => {
+        g.flags.rival_state = 'met';
+        g.setStage(10);
+        g.startRivalFight();
+      },
+    };
+  },
+
+  voss_gem: (g) => {
+    if (g.flags.rival_state === 'met') return {
+      pages: [{ name: 'DIRECTOR VOSS', text: 'Intervention delivered. The ledger closes the line. Outstanding performance, all things considered.' }],
+    };
+    return {
+      pages: [{ name: 'DIRECTOR VOSS', text: 'See my associate at the gem. The contract won\'t honour itself.' }],
+    };
+  },
+
+  /* ================= BRIARFEN ================= */
+
+  lace_briarfen: (g) => {
+    const rs = g.flags.rival_state;
+    if (rs === 'ally' || rs === 'glitched') return {
+      pages: [
+        { name: 'LACE HARROW', text: 'Something came through the claim road. The color in the air is wrong — or right, depending on your contract.' },
+        { name: 'LACE HARROW', text: 'Thorn contracts don\'t expire. The Matriarch Depths are open to claimants I recognize. You\'re close to being recognized.' },
+        { name: 'LACE HARROW', text: 'The Bell-Gate is yours once you\'ve proved you can leave and still want to come back. Most don\'t.' },
+      ],
+    };
+    return {
+      pages: [
+        { name: 'LACE HARROW', text: 'Briarfen doesn\'t open for every traveler. You have the look of someone the road decided to keep.' },
+        { name: 'LACE HARROW', text: 'Browse the market. Clear the air. Don\'t touch the matriarch\'s territory without a contract.' },
+      ],
+    };
+  },
+
+  briarfen_apoth: (g) => ({
+    pages: [{ name: 'WREN', text: 'Thornroot tonics — faster cast, slower rot, mixed reviews on the smell. Welcome to Briarfen.' }],
+    shop: 'shop',
+  }),
+
+  keeper_aurel_briarfen: (g) => {
+    if (!g.flags.glitch_active) return {
+      pages: [
+        { name: 'KEEPER AUREL', text: 'Concord business in Briarfen today. Lace and Marrick disagreed about a logging contract. They tend to.' },
+        { name: 'KEEPER AUREL', text: 'The vale holds because someone holds it. Today that\'s me. Tomorrow — we\'ll see.' },
+      ],
+    };
+    return {
+      pages: [
+        { name: 'KEEPER AUREL', text: 'A letter reached you, I believe. I sent it to the Bell-Gate. "Don\'t confuse color for cure." Still true.' },
+        { name: 'KEEPER AUREL', text: 'I saw the gem break from the High Hall. Whatever you and your companion did — the vale noticed. Come to Graycroft when you\'re ready.' },
+      ],
+    };
+  },
+
+  thornfolk_a: () => ({
+    pages: [{ name: 'MIRA', text: 'The market\'s been green-smelling since last night. Thorn blossoms out of season. I\'m not superstitious but I\'ve been inside a lot.' }],
+  }),
+
+  thornfolk_b: () => ({
+    pages: [{ name: 'DONN', text: 'Briarfen\'s friendlier than it looks. The thorns are decorative. Mostly decorative. Mostly.' }],
+  }),
+
+  rival_ally: (g) => {
+    if (g.flags.rival_state !== 'ally') return {
+      pages: [{ name: '???', text: 'Not here yet. Or here already and choosing not to be found. Hard to say.' }],
+    };
+    const meta = [
+      'You always forget the part that hurts. That\'s why they ring the bell.',
+      'This is the furthest I\'ve been without the gray collapsing. New territory. Don\'t celebrate — it means the hard part starts.',
+      'The Matriarch is in the Depths. She knows we\'re here. She\'s been waiting for the color too.',
+    ];
+    const t = meta[(g.flags.rival_meet_n || 0) % meta.length];
+    return {
+      pages: [{ name: '???', text: t }],
+      onDone: (g) => { g.flags.rival_meet_n = (g.flags.rival_meet_n || 0) + 1; },
+    };
+  },
 };

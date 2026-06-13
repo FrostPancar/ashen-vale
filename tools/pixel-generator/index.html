@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASHEN VALE — Pixel Art Generator</title>
+  <link rel="stylesheet" href="/tools/pixel-generator/style.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="app-header">
+      <h1>ASHEN VALE</h1>
+      <span class="subtitle">PIXEL ART GENERATOR</span>
+      <a href="/tools/sprite-viewer/" class="back-link">SPRITE VIEWER</a>
+      <a href="/" class="back-link">← GAME</a>
+    </header>
+
+    <aside id="sidebar">
+      <div class="sidebar-section">
+        <label class="field-label" for="object-name">OBJECT NAME</label>
+        <input id="object-name" type="text" placeholder="e.g. lantern, hay bale, shrine" autocomplete="off" spellcheck="false" />
+      </div>
+
+      <div class="sidebar-section">
+        <label class="field-label" for="object-desc">STYLE NOTES <span class="optional">(optional)</span></label>
+        <textarea id="object-desc" rows="3" placeholder="wooden, mossy, hanging from a post…"></textarea>
+      </div>
+
+      <div class="sidebar-section">
+        <label class="field-label">CANVAS SIZE</label>
+        <div id="size-presets" class="tab-row"></div>
+        <div class="size-custom">
+          <input id="size-w" type="number" min="8" max="48" value="16" />
+          <span>×</span>
+          <input id="size-h" type="number" min="8" max="48" value="16" />
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <label class="field-label" for="api-key">CURSOR API KEY <span class="optional">(optional)</span></label>
+        <input id="api-key" type="password" placeholder="Uses CURSOR_API_KEY from .env if set" autocomplete="off" />
+        <p class="hint">Bills against your <a href="https://cursor.com/dashboard/usage" target="_blank" rel="noopener">Cursor subscription</a>. Get a key at <a href="https://cursor.com/dashboard/integrations" target="_blank" rel="noopener">Dashboard → Integrations</a>.</p>
+      </div>
+
+      <div class="sidebar-section">
+        <label class="field-label" for="model">MODEL</label>
+        <select id="model">
+          <option value="composer-2.5-fast" selected>composer-2.5-fast (recommended)</option>
+          <option value="composer-2.5">composer-2.5</option>
+          <option value="auto">auto</option>
+        </select>
+      </div>
+
+      <div class="sidebar-section actions">
+        <button id="btn-generate" class="btn primary full">GENERATE 4 VARIANTS</button>
+        <p id="status" class="status">Uses your Cursor subscription credits. Generation takes ~30–60s.</p>
+      </div>
+
+      <div class="sidebar-section">
+        <label class="field-label">PALETTE</label>
+        <div id="palette-swatches"></div>
+        <p class="hint"><code>.</code> transparent · <code>0</code> dark · <code>1</code> · <code>2</code> · <code>3</code> light</p>
+      </div>
+    </aside>
+
+    <main id="results">
+      <div id="empty-state">
+        <p>AI generates 4 prop variants in Ashen Vale’s 4-shade ASCII format.</p>
+        <p>Preview sprites, copy ASCII rows, or copy a full <code>const</code> block for <code>src/art.js</code>.</p>
+      </div>
+      <div id="variant-grid" class="variant-grid hidden"></div>
+    </main>
+  </div>
+
+  <div id="scanlines"></div>
+  <div id="toast" class="hidden"></div>
+
+  <script type="module" src="/tools/pixel-generator/main.js"></script>
+</body>
+</html>

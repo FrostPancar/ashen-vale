@@ -9,13 +9,15 @@
     "preview": "vite preview",
     "server": "node server.js",
     "start": "node server.js & vite",
-    "viewer": "vite --open /tools/sprite-viewer/"
+    "viewer": "vite --open /tools/sprite-viewer/",
+    "pixel-gen": "vite --open /tools/pixel-generator/"
   },
   "dependencies": {
     "three": "^0.165.0",
     "ws": "^8.17.0"
   },
   "devDependencies": {
+    "@cursor/sdk": "^1.0.18",
     "vite": "^5.3.0"
   }
 }

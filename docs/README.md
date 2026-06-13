@@ -10,6 +10,7 @@ Design and world-building references for the demo. Read these before adding cont
 | [NPC Voice](./design/NPC_VOICE.md) | Tone, language, cast sheet, and dialog checklist |
 | [Items & Loot](./design/ITEMS_AND_LOOT.md) | Item system, loot pipelines, shops, difficulty curve |
 | [World Areas](./design/WORLD_AREAS.md) | Major regions, micro-patches, sprinkle system for maps |
+| [Story Notes](./design/STORY_NOTES.md) | Full arc, Rival + Glitch twists, map chapter tie-in |
 
 ## Dev tools
 

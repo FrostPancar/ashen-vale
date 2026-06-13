@@ -29,6 +29,15 @@ export const TILDEF = {
   'X': { tex: 'citywall', solid: true, tall: true },
 };
 
+// Biome scatter tables — density fractions applied to open ground tiles.
+// Procedural generators and the sprinkle system import this to stay consistent.
+export const BIOME_SCATTER = {
+  vale_meadow:      { '#': 0.04, '^': 0.01, 'f': 0.02, ',': 0.01, 'h': 0.008 },
+  hollow_thornwood: { '#': 0.06, '^': 0.03, ',': 0.03, 'h': 0.02 },
+  ash_scrub:        { 's': 0.15, ':': 0.08, 'h': 0.01, '#': 0.005 },
+  cave:             {}, // manual carving only
+};
+
 /* ---------- grid DSL ---------- */
 function G(w, h, fill) {
   const d = [];
@@ -464,6 +473,10 @@ function buildAshfall() {
       { id: 'hob', sprite: 'merchant', x: 15, y: 25, dir: 'down', dialog: 'hob' },
       { id: 'lira', sprite: 'villager', x: 18, y: 25, dir: 'down', dialog: 'lira' },
       { id: 'jun', sprite: 'villager', x: 9, y: 30, dir: 'left', dialog: 'jun' },
+      // Post-demo Ch.2: Voss recruiter intercepts travelers near the south gate
+      { id: 'recruiter', sprite: 'merchant', x: 26, y: 32, dir: 'left', dialog: 'voss_recruiter' },
+      // Lace Harrow glimpse — Sovereign of Thorns at market stall (watches silently)
+      { id: 'lace', sprite: 'villager2', x: 17, y: 26, dir: 'down', dialog: 'lace_ashfall' },
     ],
     enemies: [],
   };
@@ -570,16 +583,23 @@ function buildArena() {
 /** Claim Road — ash scrub badlands, Ashfall north gate → contract cave mouth. */
 function buildRouteClaim() {
   const g = G(44, 56, 's');
-  scatter(g, ':', 180, 41, 's');
-  scatter(g, '#', 24, 42, 's.:');
+  // base ash_scrub terrain: heavy sand and grit scatter
+  scatter(g, ':', 200, 41, 's');
+  scatter(g, 's', 120, 42, ':');   // sand re-scatter on grass2 — reinforces dry look
+  scatter(g, 'h', 14,  44, 's.:'); // sparse dead bushes
+  scatter(g, '#',  8,  45, 's.:'); // very sparse lone trees
   frame(g, 0, 0, 44, 56, 's');
   rect(g, 1, 1, 42, 54, ':');
+  scatter(g, 's', 80, 46, ':');    // sand patches over grass2
   // main north road
   rect(g, 20, 2, 4, 52, 'p');
   rect(g, 20, 54, 4, 2, 'p');
-  // thornwood-edge band (north third)
-  scatter(g, '#', 40, 43, '.:p');
-  scatter(g, 'h', 20, 44, '.:');
+  // Thornwood-edge band (north third) — trees thicken as you near the cave
+  scatter(g, '#', 44, 43, '.:');
+  scatter(g, 'h', 22, 44, '.:');
+  // Barbed-wire fence line on east shoulder (mid-map, lease boundary)
+  rect(g, 36, 28, 1, 12, 'F');
+  rect(g, 36, 40, 4, 1, 'F');
   rect(g, 8, 8, 10, 6, 's'); // mining camp clearing
   return {
     id: 'route_claim', name: 'CLAIM ROAD', majorType: 'badlands_route', biome: 'ash_scrub',
@@ -590,28 +610,64 @@ function buildRouteClaim() {
       { x: 20, y: 0, w: 4, h: 1, to: 'claim_cave', tx: 20, ty: 29 },
     ],
     props: [
+      // Gate sign and road opener
       { type: 'sign', x: 22, y: 52, text: 'CONSOLIDATED MINING CO. — lease road. Mind the wire. Mind the beetles.' },
-      { type: 'sign', x: 12, y: 10, text: 'NORTH: Contract Cave mouth. SOUTH: Ashfall gates.' },
+      // Milestone: 1 league south
+      { type: 'sign', x: 22, y: 40, text: 'MILESTONE — 1 LEAGUE from ASHFALL. Claim road continues north. Beetles per league: many.' },
+      // Trash heap oracle (south-west recess)
+      { type: 'crate', x: 4, y: 46 }, { type: 'barrel', x: 5, y: 47 }, { type: 'pot', x: 4, y: 48 },
+      { type: 'rock', x: 3, y: 47 },
+      { type: 'sign', x: 6, y: 47, text: 'THE ORACLE OF RUBBISH — "Leave a question." (Scrawled beneath: "North. Always north. They always go north." — Oracle)' },
+      // Bone cairn (west side, mid-map)
+      { type: 'rock', x: 5, y: 30 }, { type: 'rock', x: 6, y: 29 }, { type: 'rock', x: 5, y: 28 },
+      { type: 'sign', x: 7, y: 28, text: 'Someone built this cairn. The beetles knocked it over. Someone rebuilt it. The beetles haven\'t knocked it over again. Respect.' },
+      // Barbed wire stretch (east shoulder, mid-map)
+      { type: 'rock', x: 37, y: 38 }, { type: 'rock', x: 36, y: 34 },
+      { type: 'sign', x: 34, y: 36, text: 'CONSOLIDATED MINING — Lease boundary. The wire is not decorative. The beetles are.' },
+      // Cold campfire (east recess, mid-map)
+      { type: 'bench', x: 38, y: 22 },
+      { type: 'pot', x: 37, y: 23 },
+      { type: 'rock', x: 39, y: 22 }, { type: 'rock', x: 38, y: 24 }, { type: 'rock', x: 40, y: 23 },
+      { type: 'sign', x: 36, y: 20, text: 'Last fire: three nights ago. Ash still warm. Whoever camped here left in a hurry.' },
+      // Lamp on the road (mid)
+      { type: 'lamp', x: 24, y: 28 }, { type: 'lamp', x: 19, y: 16 },
+      // Mining camp clearing (north-west)
       { type: 'bench', x: 10, y: 11 },
       { type: 'crate', x: 11, y: 9 }, { type: 'barrel', x: 13, y: 9 }, { type: 'pot', x: 12, y: 10 },
-      { type: 'lamp', x: 24, y: 28 },
+      { type: 'sign', x: 12, y: 10, text: 'CAMP SEVEN — Consolidated Mining survey post. Hot lunch: gone. Beetles: present.' },
+      // Milestone: cave mouth near
+      { type: 'sign', x: 22, y: 15, text: 'CONTRACT CAVE — 0.2 LEAGUES. Consolidated Mining Site No.7. Hard hats mandatory. Results variable.' },
+      // Road clutter
       { type: 'rock', x: 30, y: 20 }, { type: 'rock', x: 8, y: 32 },
+      { type: 'pot', x: 27, y: 44 }, { type: 'barrel', x: 35, y: 42 },
     ],
-    npcs: [],
+    npcs: [
+      // Ambient miners — three voices, south to north
+      { id: 'cobb', sprite: 'villager', x: 10, y: 44, wander: 4, dialog: 'road_miner_a' },
+      { id: 'nessa', sprite: 'villager2', x: 16, y: 30, dir: 'right', dialog: 'road_miner_b' },
+      { id: 'grut', sprite: 'villager', x: 8, y: 12, dir: 'down', dialog: 'road_miner_c' },
+    ],
     enemies: [
-      { type: 'husk', x: 28, y: 24 }, { type: 'husk', x: 32, y: 18 },
-      { type: 'slime', x: 10, y: 40 }, { type: 'slime', x: 34, y: 36 },
+      // Encounter 1 — south (familiar): two slimes and a stray husk
+      { type: 'slime', x: 10, y: 48 }, { type: 'slime', x: 34, y: 44 },
+      { type: 'husk', x: 27, y: 38 },
+      // Encounter 2 — mid (medium): three husks spread across the scrub
+      { type: 'husk', x: 8, y: 26 }, { type: 'husk', x: 35, y: 24 }, { type: 'husk', x: 29, y: 20 },
+      // Encounter 3 — north (hard): husks + a shade near the cave mouth
+      { type: 'husk', x: 10, y: 14 }, { type: 'husk', x: 33, y: 12 }, { type: 'shade', x: 28, y: 8 },
     ],
   };
 }
 
-/** Contract Cave — Rival set-piece + Lumen Gem (scaffold layout; fights TBD). */
+/** Contract Cave — Rival set-piece + Lumen Gem. */
 function buildClaimCave() {
   const g = G(40, 32, 'r');
   rect(g, 12, 22, 16, 8, 'c');   // entry / miner foyer
   rect(g, 18, 14, 4, 8, 'c');    // north corridor
   rect(g, 8, 8, 24, 6, 'c');     // main hall + arena
   rect(g, 16, 2, 8, 6, 'c');     // gem vault
+  // Scattered rock protrusions — gives the cave walls texture
+  for (const [x, y] of [[10,10],[14,9],[28,9],[30,11],[11,12],[31,12],[17,14],[22,14]]) set(g, x, y, 'r');
   set(g, 19, 30, 'S'); set(g, 20, 30, 'S');
   set(g, 19, 7, 'S'); set(g, 20, 7, 'S');
   return {
@@ -625,17 +681,38 @@ function buildClaimCave() {
         lockMsg: 'The tunnel ahead shimmers wrong. Something must break before the thornwood opens.' },
     ],
     props: [
+      // Entry foyer (y=22-30): miner camp sprinkles
       { type: 'sign', x: 17, y: 27, text: 'MINING SAFETY — hard hats optional. Feelings not billable. Beetles mandatory.' },
-      { type: 'sign', x: 14, y: 10, text: 'ARENA MARK — Consolidated Mining dispute resolution zone.' },
-      { type: 'sign', x: 18, y: 4, text: 'LUMEN CLAIM — light that does not belong in the vale. Do not touch. (Everyone touches it.)' },
-      { type: 'shrine', id: 'lumen_gem', x: 20, y: 4 },
       { type: 'crate', x: 14, y: 24 }, { type: 'pot', x: 15, y: 25 }, { type: 'barrel', x: 25, y: 23 },
       { type: 'bench', x: 22, y: 24 },
-      { type: 'rock', x: 10, y: 10 }, { type: 'rock', x: 29, y: 11 },
+      // Miners' lunch sprinkle (foyer east wall)
+      { type: 'crate', x: 26, y: 25 }, { type: 'pot', x: 27, y: 24 },
+      { type: 'sign', x: 25, y: 26, text: 'LUNCH — Dovo\'s. Don\'t. (Dovo)' },
+      // Candle row — lamps guiding the north corridor (y=14-22)
+      { type: 'lamp', x: 19, y: 22 }, { type: 'lamp', x: 19, y: 19 },
+      { type: 'lamp', x: 19, y: 16 }, { type: 'lamp', x: 20, y: 14 },
+      // North corridor beat (y=14-22): descent text
+      { type: 'sign', x: 17, y: 20, text: 'DEEPER SEAM — gem report filed day 3. Nobody signed the survey form. Beetles: compulsory.' },
+      { type: 'sign', x: 17, y: 15, text: 'The light ahead is not torch-light. Do not tell Foreman Grut — he doesn\'t believe in it.' },
+      // Main hall (y=8-14): dispute zone + collapsed rail
+      { type: 'sign', x: 14, y: 10, text: 'CONSOLIDATED MINING — all finds are property of the lease. ALL finds.' },
+      // Collapsed rail sprinkle (main hall west)
+      { type: 'crate', x: 11, y: 11 }, { type: 'rock', x: 12, y: 10 }, { type: 'rock', x: 10, y: 12 },
+      { type: 'sign', x: 9, y: 11, text: 'CART RAIL — do not ride. (This sign was on the cart when it crashed.)' },
+      { type: 'rock', x: 29, y: 11 },
+      // Gem vault (y=2-8): approach atmosphere
+      { type: 'lamp', x: 16, y: 7 }, { type: 'lamp', x: 24, y: 7 },
+      { type: 'sign', x: 18, y: 6, text: 'LUMEN CLAIM — light that does not belong in the vale. Do not touch. (Everyone touches it.)' },
+      { type: 'shrine', id: 'lumen_gem', x: 20, y: 4 },
     ],
     npcs: [
-      { id: 'miner1', sprite: 'villager', x: 16, y: 25, dir: 'right', dialog: 'villager1' },
-      { id: 'miner2', sprite: 'villager2', x: 24, y: 26, wander: 2, dialog: 'villager2' },
+      // Foyer miners — authored lines replacing generic villager dialog
+      { id: 'miner1', sprite: 'villager', x: 16, y: 25, dir: 'right', dialog: 'miner1' },
+      { id: 'miner2', sprite: 'villager2', x: 24, y: 26, wander: 2, dialog: 'miner2' },
+      // Gem vault: the Rival at the shrine + Voss arriving from the east passage
+      // Label reads STRANGER pre-scene; dialog name shows ??? throughout
+      { id: 'stranger', sprite: 'guard', x: 20, y: 5, dir: 'down', dialog: 'rival' },
+      { id: 'voss', sprite: 'merchant', x: 27, y: 9, dir: 'left', dialog: 'voss_gem' },
     ],
     enemies: [],
   };
@@ -678,27 +755,47 @@ function buildRouteThornwood() {
   };
 }
 
-/** Briarfen — Ch.3 thornwood market hub (shell). */
+/** Briarfen — Ch.3 thornwood market hub. */
 function buildBriarfen() {
   const g = G(48, 40, '.');
-  scatter(g, ':', 90, 61, '.');
+  scatter(g, ':', 110, 61, '.');
+  // Tree borders: hollow_thornwood — denser than vale_meadow
   rect(g, 0, 0, 48, 2, '#'); rect(g, 0, 38, 48, 2, '#');
   rect(g, 0, 0, 2, 40, '#'); rect(g, 46, 0, 2, 40, '#');
+  scatter(g, '#', 38, 62, '.:');
+  scatter(g, 'h', 24, 63, '.:');
+  scatter(g, '^', 10, 64, '.:');
+  // South portal path and main north avenue
   rect(g, 22, 38, 4, 2, 'p');
   rect(g, 22, 4, 4, 34, 'p');
-  rect(g, 16, 14, 16, 10, 'p');
+  // Thorn market square (plaza) — wider than Eldermoor, stall-ring layout
+  rect(g, 14, 14, 20, 12, 'p');
+  // East connector to King's Descent gate
   rect(g, 46, 14, 2, 12, 'p');
   rect(g, 38, 14, 9, 2, 'p');
-  scatter(g, '#', 30, 62, '.:p');
-  scatter(g, 'h', 18, 63, '.:');
+  // Northwest pond: reason to linger — hollow pool with lily pads
+  rect(g, 3, 28, 7, 5, 'w');
+  rect(g, 3, 33, 7, 1, 's'); // sandy south shore
+  rect(g, 2, 27, 7, 1, 'F'); // fence along town side
+  // Flower beds around the market (first green color pocket — they'll glow after Glitch)
+  scatter(g, 'f', 18, 65, '.:');
+  rect(g, 15, 22, 2, 2, 'f'); rect(g, 29, 22, 2, 2, 'f');
+  rect(g, 15, 14, 2, 2, 'f'); rect(g, 29, 14, 2, 2, 'f');
+  // Small thorn-hedge nook (east side)
+  rect(g, 36, 22, 6, 6, '.');
+  rect(g, 36, 22, 6, 1, 'h'); rect(g, 36, 27, 6, 1, 'h');
+  rect(g, 36, 23, 1, 4, 'h'); rect(g, 41, 23, 1, 4, 'h');
+  set(g, 38, 27, '.'); set(g, 39, 27, '.'); // hedge nook entrance (south)
+  // Clear building footprints
   const buildings = [
-    { x: 4, y: 5, w: 10, h: 7, door: { x: 9, y: 11 }, label: 'APOTHECARY' },
-    { x: 32, y: 5, w: 11, h: 7, door: { x: 37, y: 11 }, label: 'THORN INN' },
-    { x: 6, y: 22, w: 12, h: 8, door: { x: 12, y: 29 }, label: 'TIMBER COMPACT' },
+    { x: 4, y: 4, w: 10, h: 7, door: { x: 9, y: 10 }, label: 'APOTHECARY', to: 'briarfen_apoth' },
+    { x: 32, y: 4, w: 11, h: 7, door: { x: 37, y: 10 }, label: 'THORN INN', to: 'briarfen_inn' },
+    { x: 5, y: 22, w: 12, h: 8, door: { x: 11, y: 29 }, label: 'TIMBER COMPACT', to: 'briarfen_compact' },
   ];
   for (const b of buildings) rect(g, b.x, b.y, b.w, b.h, '.');
   return {
     id: 'briarfen', name: 'BRIARFEN', majorType: 'market_town', biome: 'hollow_thornwood',
+    colorPocket: 'briarfen',
     grid: g, ambient: 'day', music: 'town',
     buildings,
     portals: [
@@ -708,18 +805,57 @@ function buildBriarfen() {
         lockMsg: 'East road sealed until the Thorn Matriarch falls — or Lace Harrow grants passage.' },
     ],
     props: [
+      // Bell-Gate — activated when glitch_active; gives fast-travel to Eldermoor/Ashfall
       { type: 'shrine', id: 'bell_gate_briarfen', x: 18, y: 16 },
-      { type: 'stall', x: 14, y: 18 }, { type: 'stall', x: 17, y: 18 }, { type: 'stall', x: 20, y: 18 },
-      { type: 'fountain', x: 24, y: 17 },
-      { type: 'bench', x: 28, y: 20 }, { type: 'bench', x: 15, y: 24 },
-      { type: 'lamp', x: 16, y: 14 }, { type: 'lamp', x: 31, y: 14 },
-      { type: 'sign', x: 20, y: 37, text: 'BRIARFEN — thorn market. Population: entangled.' },
+      // Thorn market stalls (ring layout around the Bell-Gate)
+      { type: 'stall', x: 14, y: 18 }, { type: 'stall', x: 17, y: 18 },
+      { type: 'stall', x: 21, y: 18 }, { type: 'stall', x: 25, y: 18 },
+      // Lace Harrow's stall — slightly set back, signposted
+      { type: 'stall', x: 28, y: 16 },
+      { type: 'sign', x: 30, y: 16, text: 'LACE HARROW — Sovereign of Thorns. Thorn contracts don\'t expire. Neither do I.' },
+      // Meeting stump (community gather)
+      { type: 'bench', x: 21, y: 21 }, { type: 'bench', x: 24, y: 21 },
+      { type: 'rock', x: 22, y: 23 }, // meeting stump centre stone
+      // Bulletin board (quest hook / notice board)
+      { type: 'sign', x: 16, y: 13, text: 'BRIARFEN NOTICE BOARD — Matriarch Depths: bounty open. Bell-Gate: awaiting Concord clearance. Lost: one thorn contract. (Reward: another contract.)' },
+      // Fountain / market centrepiece
+      { type: 'fountain', x: 22.5, y: 17.5 },
+      // Lamps ringing the plaza
+      { type: 'lamp', x: 14, y: 14 }, { type: 'lamp', x: 31, y: 14 },
+      { type: 'lamp', x: 14, y: 25 }, { type: 'lamp', x: 31, y: 25 },
+      { type: 'lamp', x: 22, y: 5 }, { type: 'lamp', x: 25, y: 5 },
+      // Fishspot at the northwest pond
+      { type: 'fishspot', x: 5, y: 32 },
+      { type: 'bench', x: 10, y: 31 },
+      { type: 'sign', x: 10, y: 29, text: 'HOLLOW POOL — the fish here remember thorn-light. Cast at the green ripples.' },
+      // Signs
+      { type: 'sign', x: 22, y: 37, text: 'BRIARFEN — thorn market. Population: entangled.' },
       { type: 'sign', x: 40, y: 15, text: 'EAST: King\'s Descent to Tidehaven (sealed).' },
-      { type: 'sign', x: 24, y: 3, text: 'NORTH: Matriarch Depths — not yet mapped.' },
-      { type: 'crate', x: 33, y: 20 }, { type: 'barrel', x: 35, y: 21 },
+      { type: 'sign', x: 24, y: 3, text: 'NORTH: Thorn Depths — Matriarch territory. Active bounty.' },
+      // Hedge nook: memorial bench (linger spot)
+      { type: 'bench', x: 38, y: 25 },
+      { type: 'sign', x: 37, y: 23, text: 'Thorn nook — the locals call it the Quiet Bite. Nobody bites. It is quiet.' },
+      // Market clutter
+      { type: 'basket', x: 15, y: 20 }, { type: 'basket', x: 18, y: 20 },
+      { type: 'pot', x: 26, y: 20 }, { type: 'crate', x: 26, y: 17 },
+      { type: 'barrel', x: 13, y: 17 }, { type: 'crate', x: 33, y: 20 },
+      { type: 'pot', x: 33, y: 22 }, { type: 'barrel', x: 35, y: 21 },
+      // Sprinkle: laundry line behind Thorn Inn
+      { type: 'barrel', x: 34, y: 12 }, { type: 'pot', x: 36, y: 12 },
+      { type: 'sign', x: 42, y: 20, text: 'Thornwood Timber Co. — the trees here grew around contracts. They are extremely legally binding.' },
     ],
     npcs: [
-      { id: 'lace_stub', sprite: 'merchant', x: 19, y: 19, dir: 'down', dialog: 'merchant' },
+      // Lace Harrow — Sovereign of Thorns at her market stall (first proper meet)
+      { id: 'lace_briarfen', sprite: 'merchant', x: 29, y: 17, dir: 'down', dialog: 'lace_briarfen' },
+      // Apothecary merchant
+      { id: 'briarfen_apoth_npc', sprite: 'merchant', x: 22, y: 18, dir: 'down', dialog: 'briarfen_apoth' },
+      // Wandering townsfolk
+      { id: 'thornfolk1', sprite: 'villager', x: 20, y: 22, wander: 3, dialog: 'thornfolk_a' },
+      { id: 'thornfolk2', sprite: 'villager2', x: 26, y: 20, wander: 3, dialog: 'thornfolk_b' },
+      // Keeper Aurel — brief appearance (settles Lace/Marrick dispute off-screen, tips hat)
+      { id: 'keeper_aurel', sprite: 'elder', x: 15, y: 17, dir: 'right', dialog: 'keeper_aurel_briarfen' },
+      // Post-glitch: Rival as grudging ally (conditionally present)
+      { id: 'rival_ally', sprite: 'guard', x: 28, y: 24, dir: 'down', dialog: 'rival_ally' },
     ],
     enemies: [],
   };

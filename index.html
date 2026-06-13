@@ -9,6 +9,7 @@
 <body>
   <div id="game-root">
     <canvas id="game-canvas"></canvas>
+    <div id="glitch-overlay" class="hidden"></div>
 
     <!-- HUD -->
     <div id="hud" class="hidden">
@@ -93,7 +94,17 @@
     <!-- Title screen -->
     <div id="title-screen">
       <div id="title-art">
-        <h1>ASHEN&nbsp;VALE</h1>
+        <pre id="title-ascii" aria-label="ASHEN VALE"> ███   ████ █   █ █████ █   █
+█   █ █     █   █ █     ██  █
+█████  ███  █████ ████  █ █ █
+█   █     █ █   █ █     █  ██
+█   █ ████  █   █ █████ █   █
+
+   █   █  ███  █     █████
+   █   █ █   █ █     █
+   █   █ █████ █     ████
+    █ █  █   █ █     █
+     █   █   █ █████ █████</pre>
         <div id="title-sub">~ a tale of the hollow road ~</div>
       </div>
       <div id="save-slots">

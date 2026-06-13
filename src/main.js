@@ -326,6 +326,29 @@ class Game {
       SFX.arrivalSting();
       this.save();
     }
+    // first arrival on Claim Road — stage 8 (depart quest advances to claim road quest)
+    if (id === 'route_claim' && !this.flags.visited_route_claim) {
+      this.flags.visited_route_claim = true;
+      this.setStage(8);
+      this.save();
+    }
+    // first descent into the Contract Cave — stage 9
+    if (id === 'claim_cave' && !this.flags.visited_claim_cave) {
+      this.flags.visited_claim_cave = true;
+      this.setStage(9);
+      this.save();
+    }
+    // first arrival in Briarfen — stage 12 complete
+    if (id === 'briarfen' && !this.flags.visited_briarfen) {
+      this.flags.visited_briarfen = true;
+      if (this.flags.stage === 12) this.setStage(13);
+      SFX.arrivalSting();
+      this.arrivalHold = 2.2;
+      this.uiLock = true;
+      this.save();
+    }
+    // apply post-glitch color pocket CSS filter (briarfen = green)
+    this.applyMapTint(id);
     this.updateQuestUI();
   }
 
@@ -367,6 +390,12 @@ class Game {
       meet: s > 0, dummies: s > 1, smith: s > 2, report: s > 3,
       cave: this.flags.visited_cave, warden: this.flags.warden_dead,
       ashfall: s > 5, dummies_n: this.flags.dummies_n,
+      route_claim: s > 7,
+      cave_entry: s > 8,
+      gem_vault: s > 9,
+      rival_met: this.flags.rival_state === 'met',
+      glitch_done: this.flags.glitch_active,
+      reach_briarfen: this.flags.visited_briarfen,
     };
     this.ui.updateQuest(s, prog, this.sideQuestEntries(), s >= 6);
   }
@@ -908,6 +937,36 @@ class Game {
         return;
       }
       if (pr.type === 'shrine' && d < 1.5) {
+        // Lumen Gem vault — pre-fight approach prompt
+        if (pr.id === 'lumen_gem') {
+          if (this.flags.rival_state === 'ally' || this.flags.glitch_active) {
+            this.ui.startDialog([{ name: 'LUMEN GEM', text: 'Cracked. Light still leaks from it — wrong color for this vale. The Glitch started here.' }]);
+          } else if (this.enemies.some(e => e.type === 'rival')) {
+            this.ui.startDialog([{ name: 'LUMEN GEM', text: 'The gem pulses. Finish the fight first.' }]);
+          } else {
+            this.ui.startDialog(DIALOGS.rival(this).pages, DIALOGS.rival(this).onDone ? () => DIALOGS.rival(this).onDone(this) : null);
+          }
+          return;
+        }
+        // Bell-Gate: Briarfen
+        if (pr.id === 'bell_gate_briarfen') {
+          if (!this.flags.glitch_active) {
+            this.ui.startDialog([{ name: 'BELL-GATE', text: 'A Concord spell-terminal — cold stone, faint bell-hum. The network hasn\'t recognized this one yet. It needs the world to change first.' }]);
+          } else if (!this.flags.bell_gates?.briarfen) {
+            this.flags.bell_gates = { ...(this.flags.bell_gates || {}), briarfen: true };
+            SFX.questDone();
+            this.fx.levelBurst(new THREE.Vector3(pr.x + 0.5, 0, pr.y + 0.5));
+            this.toast('Bell-Gate BRIARFEN activated — fast travel to Eldermoor and Ashfall', true);
+            this.ui.startDialog([
+              { name: 'BELL-GATE', text: 'The terminal rings once — long, low, unexpected. Something in the color-changed air answered.' },
+              { name: 'BELL-GATE', text: '"Concord network recognizes: BRIARFEN. Routing: Eldermoor · Ashfall · Briarfen." The ring fades. You feel it in your teeth.' },
+            ]);
+            this.save();
+          } else {
+            this.ui.startDialog([{ name: 'BELL-GATE', text: 'BRIARFEN terminal active. Bell-Gate links: Eldermoor · Ashfall · Briarfen.' }]);
+          }
+          return;
+        }
         const n = this.charmCount();
         if (n >= 5 && !this.flags.charm_reward) {
           this.flags.charm_reward = true;
@@ -1699,6 +1758,14 @@ class Game {
   }
 
   killEnemy(enemy) {
+    // Rival yields — route to stalemate handler instead of kill
+    if (enemy.type === 'rival') {
+      this.scene.remove(enemy.sprite.group);
+      this.enemies = this.enemies.filter(e => e !== enemy);
+      this.ui.setBossBar(null);
+      this.onRivalYield();
+      return;
+    }
     const training = enemy.def.training || enemy.type === 'dummy';
     SFX.enemyDie();
     const p = this.player;
@@ -1760,6 +1827,146 @@ class Game {
     const extra = rollEnemyLoot(enemy.type, this.player.klass, this.player.level, this.mapId);
     if (extra) {
       for (const d of extra) this.spawnDrop(d.kind, d.data, enemy.pos);
+    }
+  }
+
+  /* ============ Rival fight + Glitch sequence ============ */
+
+  startRivalFight() {
+    // Spawn the Rival enemy at the gem vault (x:20, z:5)
+    const rival = new Enemy('rival', 19.5, 4.5);
+    rival.home.set(20, 0, 5);
+    this.scene.add(rival.sprite.group);
+    this.enemies.push(rival);
+    this.shake(0.5);
+    this.toast('THE LANCE — fight to a stalemate!', true);
+    this.ui.setBossBar('???', 1.0);
+    SFX.bossRoar();
+    // Hide the stranger NPC while the fight is live
+    const strangerNpc = this.npcs.find(n => n.def.id === 'stranger');
+    if (strangerNpc) strangerNpc.sprite.group.visible = false;
+  }
+
+  onRivalYield() {
+    this.shake(0.4);
+    SFX.questDone();
+    this.toast('STALEMATE — the Rival yields', true);
+    // Brief pause then post-yield dialog → Glitch trigger
+    this.uiLock = true;
+    this.timers.push({
+      t: 0.9,
+      fn: () => {
+        this.uiLock = false;
+        this.ui.startDialog([
+          { name: '???', text: 'Enough. ...You\'re better than I expected.' },
+          { name: '???', text: 'The gem is right there. We both know we\'re going to touch it. Stop pretending otherwise.' },
+          { name: 'DIRECTOR VOSS', text: 'This is not in the contract. THIS IS NOT IN THE CONTRACT—' },
+        ], () => this.fireGlitch());
+      },
+    });
+  }
+
+  fireGlitch() {
+    const gemPos = new THREE.Vector3(20.5, 0, 4.5);
+    this.shake(2.2);
+    SFX.bossRoar();
+    // Staggered colored particle burst — color breaking through the gray
+    const burst = ['#ff3366', '#ffcc00', '#00ffaa', '#aa44ff', '#ff8800', '#00ccff'];
+    for (let i = 0; i < burst.length; i++) {
+      const delay = i * 85;
+      this.timers.push({ t: delay / 1000, fn: () => {
+        this.fx.particles(gemPos, 14, 3.2 + i * 0.4, {
+          colorA: burst[i],
+          colorB: burst[(i + 2) % burst.length],
+          cap: 16, up: 1.8,
+        });
+      }});
+    }
+    this.fx.shockwave(gemPos, 7);
+    this.fx.levelBurst(gemPos);
+
+    // CSS glitch flash on the overlay
+    const overlay = document.getElementById('glitch-overlay');
+    if (overlay) {
+      overlay.classList.remove('hidden');
+      overlay.classList.add('flashing');
+      setTimeout(() => {
+        overlay.classList.remove('flashing');
+        overlay.classList.add('hidden');
+      }, 1800);
+    }
+
+    // Set flags
+    this.flags.glitch_active = true;
+    this.flags.rival_state = 'glitched';
+    this.flags.bell_gates = { ...(this.flags.bell_gates || {}), briarfen: false };
+    this.setStage(11);
+
+    // Post-Glitch dialog — rival transitions to ally
+    this.uiLock = true;
+    this.timers.push({ t: 1.2, fn: () => {
+      this.uiLock = false;
+      this.applyMapTint(this.mapId);
+      this.ui.startDialog([
+        { name: '???', text: 'That was a short run. Sit down before you waste another.' },
+        { name: '???', text: 'The gem is cracked. Did you feel that? Everything wrong. Everything right.' },
+        { name: '???', text: 'The gray was a lie. I knew it — I have run this far before. But never through the color.' },
+        { name: '???', text: '...Come on. Thornwood is north. The vale changed. We\'re not done.' },
+      ], () => {
+        this.flags.rival_state = 'ally';
+        this.setStage(12);
+        this.save();
+      });
+    }});
+
+    this.save();
+  }
+
+  rivalSkillHit(rival, skill, target) {
+    if (!target) return;
+    const t = rival.def;
+    if (skill === 'lunge') {
+      const dir = target.pos.clone().sub(rival.pos).normalize();
+      rival.pos.x += dir.x * 1.6;
+      rival.pos.z += dir.z * 1.6;
+      const dmg = Math.round(enemyDamage(t, rival) * t.lunge.mult);
+      if (rival.pos.distanceTo(target.pos) < t.lunge.range + 0.4) {
+        if (target === this.player) this.player.damage(dmg, this, { from: rival.pos, power: dmg * 0.5 });
+      }
+      this.fx.sparks(rival.pos, 7, 1.6);
+      SFX.slam();
+    } else if (skill === 'whirl') {
+      const dmg = Math.round(enemyDamage(t, rival) * t.whirl.mult);
+      this.fx.shockwave(rival.pos, t.whirl.range);
+      this.shake(0.35);
+      SFX.slam();
+      if (this.player.hp > 0 && this.player.pos.distanceTo(rival.pos) < t.whirl.range + 0.45) {
+        this.player.damage(dmg, this, { from: rival.pos });
+      }
+    } else if (skill === 'rush') {
+      const dir = target.pos.clone().sub(rival.pos).normalize();
+      rival.pos.set(target.pos.x - dir.x * 0.85, 0, target.pos.z - dir.z * 0.85);
+      const dmg = Math.round(enemyDamage(t, rival));
+      this.fx.particles(rival.pos, 10, 2.0);
+      SFX.push();
+      if (rival.pos.distanceTo(target.pos) < 1.1) {
+        if (target === this.player) {
+          this.player.damage(dmg, this, { from: rival.pos });
+          this.player.stunned = Math.max(this.player.stunned, 0.55);
+        }
+      }
+    }
+  }
+
+  applyMapTint(mapId) {
+    const canvas = this.renderer.domElement;
+    if (this.flags.glitch_active) {
+      const def = this.maps[mapId];
+      const pocket = def?.colorPocket;
+      const filter = pocket ? ({ briarfen: 'hue-rotate(88deg) saturate(0.42) brightness(0.94)' }[pocket] || '') : '';
+      canvas.style.filter = filter;
+    } else {
+      canvas.style.filter = '';
     }
   }
 
@@ -2357,6 +2564,8 @@ class Game {
     // boss bar
     const boss = this.enemies.find(e => e.def.boss);
     if (boss && this.mapId === 'boss') this.ui.setBossBar('THE STONE WARDEN', boss.hp / boss.maxHp);
+    const rival = this.enemies.find(e => e.type === 'rival');
+    if (rival && this.mapId === 'claim_cave') this.ui.setBossBar('???', rival.hp / rival.maxHp);
 
     // projectiles
     for (const pr of [...this.projectiles]) {

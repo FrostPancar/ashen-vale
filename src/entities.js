@@ -12,12 +12,24 @@ export { Effects, GlowSystem } from './fx.js';
 
 const RADIUS = 0.28;
 
+const TAG_BG = 'rgba(100,102,100,0.84)'; // slightly lighter than shadow / UI ink
+
 /* ---------------- helpers ---------------- */
 export function makeLabel(text, scale = 1) {
-  const [c, ctx] = makeCanvas(text.length * 8 + 8, 14);
-  ctx.fillStyle = 'rgba(48,50,48,0.88)'; ctx.fillRect(0, 0, c.width, 14);
-  ctx.fillStyle = PAL[3]; ctx.font = 'bold 10px monospace'; ctx.textBaseline = 'middle';
-  ctx.fillText(text, 4, 7);
+  const label = String(text).slice(0, 10);
+  const [, measureCtx] = makeCanvas(1, 1);
+  measureCtx.font = 'bold 10px monospace';
+  const textW = Math.ceil(measureCtx.measureText(label).width);
+  const padX = 6;
+  const w = Math.min(72, Math.max(28, textW + padX * 2));
+  const [c, ctx] = makeCanvas(w, 14);
+  ctx.fillStyle = TAG_BG;
+  ctx.fillRect(0, 0, w, 14);
+  ctx.fillStyle = PAL[3];
+  ctx.font = 'bold 10px monospace';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, w / 2, 7);
   const m = new THREE.Mesh(
     new THREE.PlaneGeometry((c.width / 36) * scale, 0.34 * scale),
     new THREE.MeshBasicMaterial({ map: canvasTexture(c), transparent: true, depthWrite: false })
@@ -27,17 +39,27 @@ export function makeLabel(text, scale = 1) {
 }
 
 function paintNameplate(name, hp, maxHp, downed) {
-  const w = Math.max(64, name.length * 8 + 18);
+  const label = String(name).slice(0, 10);
+  const [, measureCtx] = makeCanvas(1, 1);
+  measureCtx.font = 'bold 10px monospace';
+  const textW = Math.ceil(measureCtx.measureText(label).width);
+  const padX = 6;
+  const w = Math.min(72, Math.max(44, textW + padX * 2));
   const h = downed ? 24 : 20;
   const [c, ctx] = makeCanvas(w, h);
-  ctx.fillStyle = 'rgba(48,50,48,0.9)'; ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = downed ? PAL[2] : PAL[3]; ctx.font = 'bold 10px monospace'; ctx.textBaseline = 'top';
-  ctx.fillText(name.slice(0, 12), 4, 2);
-  const barY = 14, barW = w - 8, barH = 4;
-  ctx.fillStyle = PAL[0]; ctx.fillRect(4, barY, barW, barH);
+  ctx.fillStyle = TAG_BG;
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = downed ? PAL[2] : PAL[3];
+  ctx.font = 'bold 10px monospace';
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, w / 2, 2);
+  const barY = 14, barW = w - padX * 2, barH = 4;
+  ctx.fillStyle = PAL[0];
+  ctx.fillRect(padX, barY, barW, barH);
   const frac = maxHp > 0 ? Math.max(0, Math.min(1, hp / maxHp)) : 0;
   ctx.fillStyle = downed ? PAL[1] : PAL[2];
-  ctx.fillRect(4, barY, Math.round(barW * frac), barH);
+  ctx.fillRect(padX, barY, Math.round(barW * frac), barH);
   return c;
 }
 
@@ -334,8 +356,20 @@ export const ENEMY_TYPES = {
            heavy: { cd: 7, mult: 2.2, range: 1.3, windup: 0.75 } },
   shade: { hp: 28, dmg: 6, speed: 2.3, xp: 14, aggro: 7, atkR: 0.75, atkCd: 1.1, size: 0.85, gold: [2, 7], fly: true, anim: 5 },
   rat:   { hp: 13, dmg: 3, speed: 2.4, xp: 6, aggro: 5, atkR: 0.7, atkCd: 0.9, size: 0.7, gold: [1, 3], anim: 9 },
+  crawler:  { hp: 30, dmg: 5, speed: 2.1, xp: 12, aggro: 6, atkR: 0.8, atkCd: 1.0, size: 0.85, gold: [2, 6], anim: 7 },
+  thornling:{ hp: 25, dmg: 5, speed: 1.4, xp: 11, aggro: 5, atkR: 0.9, atkCd: 1.4, size: 0.9,  gold: [2, 6], anim: 8 },
+  revenant: { hp: 55, dmg: 9, speed: 1.7, xp: 22, aggro: 5.5, atkR: 0.9, atkCd: 1.4, size: 1.0, gold: [5, 12], anim: 5,
+              heavy: { cd: 8, mult: 2.0, range: 1.2, windup: 0.8 } },
   dummy: { hp: 9, dmg: 0, speed: 0, xp: 0, aggro: 0, atkR: 0, atkCd: 99, size: 0.95, gold: [0, 0], training: true, anim: 1 },
   warden:{ hp: 380, dmg: 9, speed: 1.6, xp: 130, aggro: 12, atkR: 1.5, atkCd: 1.8, size: 2.3, gold: [40, 70], anim: 3, boss: true },
+  // Rival/Lance peer — hardest encounter to this point; stalemate/yield at 20% HP
+  rival: {
+    hp: 480, dmg: 11, speed: 4.2, xp: 0, aggro: 14, atkR: 0.9, atkCd: 0.9,
+    size: 0.95, gold: [0, 0], anim: 8, peer: true,
+    lunge: { cd: 3.2, range: 2.0, mult: 1.8, windup: 0.3 },
+    whirl: { cd: 6.5, range: 1.4, mult: 1.6, windup: 0.5 },
+    rush:  { cd: 5.0, range: 3.2, windup: 0.25 },
+  },
 };
 
 let enemyUid = 1;
@@ -372,6 +406,14 @@ export class Enemy {
     this.phaseT = 2;
     this.slamCharge = 0;
     this.summoned = { 66: false, 33: false };
+    // peer (rival) Lance kit timers
+    this.lungeT = 0;
+    this.whirlT = 0;
+    this.rushT = 0;
+    this.skillCharge = 0;
+    this.skillPending = null;
+    this.phase2 = false;
+    this.yielded = false;
   }
 
   /* host-authoritative AI */
@@ -411,7 +453,8 @@ export class Enemy {
     }
 
     if (this.stunned <= 0) {
-      if (t.boss) this.bossAI(dt, target, best, world, game);
+      if (t.peer) this.rivalAI(dt, target, best, world, game);
+      else if (t.boss) this.bossAI(dt, target, best, world, game);
       else if (this.heavyCharge > 0) {
         // winding up the big swing — rooted in place
         this.heavyCharge -= dt;
@@ -449,6 +492,69 @@ export class Enemy {
       }
     }
     this.render(dt);
+  }
+
+  rivalAI(dt, target, best, world, game) {
+    const t = this.def;
+    this.lungeT  = Math.max(0, this.lungeT  - dt);
+    this.whirlT  = Math.max(0, this.whirlT  - dt);
+    this.rushT   = Math.max(0, this.rushT   - dt);
+    this.atkTimer = Math.max(0, this.atkTimer - dt);
+
+    // Phase 2 unlocks at 50% HP — faster, tighter cooldowns
+    if (!this.phase2 && this.hp <= this.maxHp * 0.5) {
+      this.phase2 = true;
+    }
+    const spd     = this.phase2 ? t.speed * 1.15 : t.speed;
+    const cdScale = this.phase2 ? 0.78 : 1.0;
+
+    // Skill windup: root in place and execute on completion
+    if (this.skillCharge > 0) {
+      this.skillCharge -= dt;
+      if (this.skillCharge <= 0) {
+        this.atkTimer = 0.65;
+        if (game.rivalSkillHit) game.rivalSkillHit(this, this.skillPending, target);
+        this.skillPending = null;
+      }
+      return;
+    }
+
+    if (!target) return;
+
+    // Skill priority: Shield Rush (gap-close) > Whirlwind (phase2 AoE) > Piercing Lunge > basic
+    if (best > 2.4 && best < t.rush.range && this.rushT <= 0) {
+      this.rushT       = t.rush.cd * cdScale;
+      this.skillCharge = t.rush.windup;
+      this.skillPending = 'rush';
+      game.fx.telegraph(this.pos, t.rush.range * 0.5, t.rush.windup);
+      SFX.push();
+      return;
+    }
+    if (this.phase2 && best < t.whirl.range && this.whirlT <= 0) {
+      this.whirlT      = t.whirl.cd * cdScale;
+      this.skillCharge = t.whirl.windup;
+      this.skillPending = 'whirl';
+      game.fx.telegraph(this.pos, t.whirl.range + 0.25, t.whirl.windup);
+      SFX.push();
+      return;
+    }
+    if (best < t.lunge.range && this.lungeT <= 0) {
+      this.lungeT      = t.lunge.cd * cdScale;
+      this.skillCharge = t.lunge.windup;
+      this.skillPending = 'lunge';
+      game.fx.telegraph(this.pos, 0.7, t.lunge.windup);
+      return;
+    }
+
+    // Basic movement and thrust
+    if (best > t.atkR * 0.9) {
+      const v = target.pos.clone().sub(this.pos).normalize().multiplyScalar(spd * dt);
+      tryMove(this.pos, v.x, v.z, world);
+    }
+    if (best < t.atkR && this.atkTimer <= 0) {
+      this.atkTimer = t.atkCd;
+      game.enemyAttack(this, target);
+    }
   }
 
   bossAI(dt, target, dist, world, game) {
@@ -598,6 +704,13 @@ export class Enemy {
     } else if (knock && !this.def.boss) {
       tryMove(this.pos, knock.x * 0.3, knock.z * 0.3, game.world);
     }
+    // Rival yields at 20% HP — fight ends as stalemate, not a kill
+    if (this.type === 'rival' && !this.yielded && this.hp <= this.maxHp * 0.20) {
+      this.yielded = true;
+      this.hp = Math.max(1, Math.round(this.maxHp * 0.04));
+      this.dead = true;
+      return true;
+    }
     if (this.hp <= 0 && !this.dead) {
       this.dead = true;
       return true; // caller handles death
@@ -660,7 +773,7 @@ export class RemotePlayer {
       new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false })
     );
     this.nameplate.rotation.x = SPRITE_TILT;
-    this.nameplate.position.y = 1.22;
+    this.nameplate.position.y = 1.48;
     this.sprite.group.add(this.nameplate);
     this.pos = new THREE.Vector3();
     this.target = new THREE.Vector3();
@@ -679,7 +792,9 @@ export class RemotePlayer {
     this.nameplate.material.map?.dispose();
     this.nameplate.material.map = tex;
     this.nameplate.material.needsUpdate = true;
-    this.nameplate.scale.set((c.width / 40) / 1.5, (c.height / 40) / 0.45, 1);
+    const worldW = Math.min(0.95, c.width / 58);
+    const worldH = worldW * (c.height / c.width);
+    this.nameplate.scale.set(worldW / 1.5, worldH / 0.45, 1);
   }
   applyState(s) {
     this.target.set(s.x, 0, s.z);
