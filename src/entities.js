@@ -381,13 +381,16 @@ export class Enemy {
     this.def = t;
     const hpMult = scale?.hp ?? 1;
     const dmgMult = scale?.dmg ?? 1;
+    const sizeMult = scale?.size ?? 1;
     this.maxHp = Math.round(t.hp * hpMult);
     this.hp = this.maxHp;
     this.dmgMult = dmgMult;
+    this.elite = !!scale?.elite;       // named mini-boss — bigger, tankier
+    this.eliteName = scale?.name || null;
     this.damagers = new Set();
     this.pos = new THREE.Vector3(x + 0.5, 0, z + 0.5);
     this.home = this.pos.clone();
-    this.sprite = new CharSprite(Art.enemies[type], t.size, t.size);
+    this.sprite = new CharSprite(Art.enemies[type], t.size * sizeMult, t.size * sizeMult);
     this.state = 'idle';
     this.stunned = 0;
     this.atkTimer = 0;

@@ -174,6 +174,10 @@ export const ENEMY_LOOT = {
   bat:    { item: 0.18, potion: 0.08, slots: ['trinket'],                rarities: { common: 55, magic: 40, rare: 5 }, affixBias: ['spd', 'crit'] },
   husk:   { item: 0.30, potion: 0.14, slots: ['armor', 'weapon'],        rarities: { common: 40, magic: 50, rare: 10 }, affixBias: ['def', 'hp', 'leech'] },
   shade:  { item: 0.26, potion: 0.10, slots: ['trinket', 'weapon'],       rarities: { common: 35, magic: 55, rare: 10 }, affixBias: ['mp', 'cdr', 'crit'] },
+  // Thornwood Verge roster — the road to Briarfen
+  thornling:{ item: 0.22, potion: 0.12, slots: ['armor', 'trinket'],     rarities: { common: 45, magic: 48, rare: 7 }, affixBias: ['def', 'hp', 'thorns'] },
+  crawler:  { item: 0.24, potion: 0.10, slots: ['trinket', 'weapon'],     rarities: { common: 40, magic: 52, rare: 8 }, affixBias: ['spd', 'crit', 'leech'] },
+  revenant: { item: 0.40, potion: 0.20, slots: ['weapon', 'armor'],       rarities: { common: 25, magic: 58, rare: 17 }, affixBias: ['dmg', 'hp', 'leech'], levelBonus: 1 },
   warden: { item: 1.0,  potion: 0.35, slots: ['weapon'],                 rarities: { rare: 100 }, affixBias: ['dmg', 'leech', 'crit', 'mp'], levelBonus: 1 },
 };
 

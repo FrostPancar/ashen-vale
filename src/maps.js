@@ -718,18 +718,48 @@ function buildClaimCave() {
   };
 }
 
-/** Thornwood Verge — dense thornwood route, cave north exit → Briarfen south gate. */
+/** Thornwood Verge — dense thornwood gauntlet, cave north exit → Briarfen south gate.
+ *  A serpentine thorn-maze in three rooms, escalating difficulty: an intro room that
+ *  introduces the thornwood roster (thornling / crawler), a puzzle hall (roll a wakestone
+ *  onto the thorn-seal + wake a lever to open the Thorn-Gate, while a revenant teaches the
+ *  windup-dodge), then Bell Hollow where the elite THORNWARDEN keeps the north road. */
 function buildRouteThornwood() {
+  // 40 x 48 — enter south (20,46), exit north (20,2). Flow forced S→W→middle→E-gate→N.
   const g = G(40, 48, '.');
-  scatter(g, ':', 140, 51, '.');
-  rect(g, 0, 0, 40, 2, '#'); rect(g, 0, 0, 3, 48, '#'); rect(g, 37, 0, 3, 48, '#');
-  rect(g, 0, 46, 40, 2, '#');
+  // hollow_thornwood understory: grass2 speckle + tallgrass thickets
+  scatter(g, ':', 150, 51, '.');
+  scatter(g, ',', 90, 57, '.:');
+  // dense thornwood frame (3 thick)
+  rect(g, 0, 0, 40, 3, '#'); rect(g, 0, 45, 40, 3, '#');
+  rect(g, 0, 0, 3, 48, '#'); rect(g, 37, 0, 3, 48, '#');
+  // inner thornwood depth — trees, pines, thorn brush (carved lanes clear these below)
   scatter(g, '#', 70, 52, '.:');
-  scatter(g, '^', 24, 53, '.:');
-  rect(g, 19, 2, 2, 44, 'p');
-  rect(g, 19, 46, 2, 2, 'p');
-  rect(g, 24, 20, 8, 6, ',');
-  rect(g, 8, 32, 7, 5, ',');
+  scatter(g, '^', 26, 53, '.:');
+  scatter(g, 'h', 32, 54, '.:');
+
+  /* --- serpentine thorn walls (2 thick) cut an S-path between three rooms --- */
+  rect(g, 8, 29, 29, 2, 'h');                 // Wall A (lower) — leaves WEST gap x3..7
+  rect(g, 3, 14, 27, 2, 'h');                 // Wall B (upper) — east side...
+  rect(g, 34, 14, 3, 2, 'h');                 // ...closed off so the gap is exactly x30..33
+
+  /* --- clear the three room cores (keeps thorn clutter only at the edges) --- */
+  rect(g, 5, 33, 30, 9, '.');                 // bottom room — Tanglemouth (intro)
+  rect(g, 5, 17, 30, 11, '.');                // middle room — Snare Hall (puzzle)
+  rect(g, 8, 4, 24, 9, '.');                  // top room — Bell Hollow (climax)
+
+  /* --- carve the lanes (cosmetic path + guaranteed clearance through the gaps) --- */
+  rect(g, 19, 42, 2, 5, 'p');                 // south entry spur (punches the border)
+  rect(g, 4, 26, 4, 7, 'p');                  // WEST gap: bottom → middle (open)
+  rect(g, 30, 11, 4, 7, 'p');                 // EAST gap: middle → top (gated by Thorn-Gate)
+  rect(g, 19, 0, 2, 5, 'p');                  // north exit spur (punches the border)
+
+  /* --- linger / vibe dressing --- */
+  rect(g, 30, 38, 6, 4, ',');                 // tallgrass nook hiding a cache
+  rect(g, 6, 35, 4, 3, ',');                  // thicket by the entry
+  rect(g, 13, 19, 4, 3, ',');                 // overgrowth by the lever
+  set(g, 29, 20, 'f');                        // the Thorn-Seal socket (marked in flowers)
+  set(g, 28, 20, 'f'); set(g, 30, 20, 'f'); set(g, 29, 19, 'f'); set(g, 29, 21, 'f');
+
   return {
     id: 'route_thornwood', name: 'THORNWOOD VERGE', majorType: 'forest_route', biome: 'hollow_thornwood',
     grid: g, ambient: 'day', music: 'route',
@@ -741,16 +771,41 @@ function buildRouteThornwood() {
         lockMsg: 'The thorns knit shut. The vale still remembers gray.' },
     ],
     props: [
-      { type: 'sign', x: 22, y: 44, text: 'SOUTH: Contract Cave. NORTH: Briarfen market road.' },
-      { type: 'sign', x: 12, y: 22, text: 'Thorn Compact waypost — contracts outlive heroes.' },
-      { type: 'bench', x: 28, y: 18 },
-      { type: 'rock', x: 11, y: 14 }, { type: 'crate', x: 30, y: 30 },
+      // The Thorn-Gate — sealed until BOTH the wakestone seal and the lever are set
+      { type: 'gateBig', id: 'thorn_gate', x: 30, y: 14, w: 4, openIf: 'thorn_gate' },
+      // Puzzle half 1: a lever in the overgrown west of the Snare Hall
+      { type: 'lever', id: 'thorn_leverA', x: 8, y: 20 },
+      // Puzzle half 2: roll the wakestone onto the flower-marked seal
+      { type: 'boulder', id: 'thorn_seed', x: 26, y: 24, target: { x: 29, y: 20 } },
+      { type: 'rock', x: 28, y: 19 }, { type: 'rock', x: 30, y: 21 }, // seal frame
+      // Signposts — wayfinding + teaching the new mechanics
+      { type: 'sign', x: 22, y: 43, text: 'THORNWOOD VERGE — Briarfen lies north. The thorns keep their own contracts. The road bends; the woods do not.' },
+      { type: 'sign', x: 12, y: 36, text: 'Thornlings root slow but bite deep — circle them, don\'t trade blows. Crawlers come quick, and in pairs.' },
+      { type: 'sign', x: 11, y: 22, text: 'Thorn Compact waypost — contracts outlive heroes. WAKE THE LEVER, then the gate listens.' },
+      { type: 'sign', x: 27, y: 22, text: 'THORN-SEAL — the old wards want weight. Roll the wakestone onto the seal. (A revenant plants its feet before it swings — that windup is your opening.)' },
+      { type: 'sign', x: 34, y: 18, text: 'THORN-GATE — opens by lever AND seal both. The verge does not open by halves.' },
+      { type: 'sign', x: 22, y: 12, text: 'BELL HOLLOW — something large keeps the north path. Briarfen\'s bell can\'t be heard past it. Yet.' },
+      // Hidden cache in the tallgrass nook (cut to find)
+      { type: 'chest', id: 'thornwood_cache', x: 34, y: 40, loot: 'bundle:gold:14-22|potion:1' },
+      // Reward for clearing the Thornwarden, just shy of the Briarfen gate
+      { type: 'chest', id: 'thornwood_reward', x: 20, y: 5, loot: 'bundle:gold:30-50|potion:2|item:trinket:magic' },
+      // atmosphere
+      { type: 'lamp', x: 6, y: 33 }, { type: 'lamp', x: 33, y: 11 },
+      { type: 'bench', x: 24, y: 18 },
+      { type: 'rock', x: 16, y: 33 }, { type: 'crate', x: 31, y: 26 },
     ],
     npcs: [],
     enemies: [
-      { type: 'bat', x: 28, y: 24 }, { type: 'bat', x: 31, y: 28 },
-      { type: 'husk', x: 12, y: 34 }, { type: 'husk', x: 16, y: 36 },
-      { type: 'slime', x: 26, y: 12 },
+      // Bottom — Tanglemouth: meet the thornwood roster
+      { type: 'thornling', x: 9, y: 37 }, { type: 'thornling', x: 29, y: 38 },
+      { type: 'crawler', x: 18, y: 34 },
+      // Middle — Snare Hall: lever guards + a revenant on the seal (teaches the windup dodge)
+      { type: 'crawler', x: 11, y: 23 }, { type: 'crawler', x: 13, y: 20 },
+      { type: 'revenant', x: 27, y: 21 },
+      { type: 'bat', x: 20, y: 18 }, { type: 'bat', x: 16, y: 26 },
+      // Top — Bell Hollow: the elite THORNWARDEN and its escort
+      { type: 'revenant', x: 20, y: 9, scale: { hp: 2.6, dmg: 1.4, size: 1.5, elite: true, name: 'THORNWARDEN' } },
+      { type: 'thornling', x: 13, y: 7 }, { type: 'thornling', x: 27, y: 7 },
     ],
   };
 }

@@ -73,8 +73,16 @@ class Game {
     enemy.damagers.add(attackerId);
   }
 
-  scaledEnemy(type, x, z) {
-    return new Enemy(type, x, z, this.net.connected ? this.partyScale() : null);
+  scaledEnemy(type, x, z, base = null) {
+    const party = this.net.connected ? this.partyScale() : null;
+    if (!base) return new Enemy(type, x, z, party);
+    // merge an authored elite scale with party scaling
+    const scale = { ...base };
+    if (party) {
+      scale.hp = (base.hp ?? 1) * party.hp;
+      scale.dmg = (base.dmg ?? 1) * party.dmg;
+    }
+    return new Enemy(type, x, z, scale);
   }
 
   openChestVisual(pr) {
@@ -297,7 +305,7 @@ class Game {
         if (ed.boss && this.flags.warden_dead) continue;
         const e = ed.type === 'dummy'
           ? new Enemy(ed.type, ed.x, ed.y)
-          : this.scaledEnemy(ed.type, ed.x, ed.y);
+          : this.scaledEnemy(ed.type, ed.x, ed.y, ed.scale);
         this.scene.add(e.sprite.group);
         this.enemies.push(e);
       }
@@ -1007,6 +1015,14 @@ class Game {
             SFX.push();
             this.fx.particles(new THREE.Vector3(nx + 0.5, 0, nz + 0.5), 4, 1);
             this.net.sendEvent('boulder', { id: pr.id, x: nx, y: nz });
+            // wakestone seated on a thorn-seal → trip the seal half of the puzzle
+            if (pr.target && nx === pr.target.x && nz === pr.target.y && !this.flags.thorn_seal) {
+              this.flags.thorn_seal = true;
+              SFX.lever();
+              this.fx.sparks(new THREE.Vector3(nx + 0.5, 0, nz + 0.5), 8, 1);
+              this.toast('The wakestone settles into the seal. It hums.', true);
+              this.checkThornGate();
+            }
             this.save();
           } else SFX.deny();
           return;
@@ -1040,7 +1056,25 @@ class Game {
         this.toast('The stone door to the vault grinds open!', true);
       }
     }
+    if (pr.id === 'thorn_leverA') {
+      this.toast('The lever wakes. The thorns lean north, listening...');
+      this.checkThornGate();
+    }
     this.save();
+  }
+
+  /** Thornwood Verge — the Thorn-Gate opens only with BOTH the wakestone seal and the lever. */
+  checkThornGate() {
+    if (this.flags.thorn_gate) return;
+    if (this.flags.thorn_leverA && this.flags.thorn_seal) {
+      this.flags.thorn_gate = true;
+      this.world.openGate('thorn_gate');
+      SFX.gate();
+      this.toast('The Thorn-Gate unknits. The road to Briarfen opens north!', true);
+      this.save();
+    } else {
+      this.toast('Lever and seal both — the verge does not open by halves.');
+    }
   }
 
   openShopFor(kind) {
@@ -2379,6 +2413,7 @@ class Game {
         else { // not on this map; still resolve gate flags
           if (msg.id === 'route_lever') this.flags.route_lever = true;
           if (this.flags.cave_leverA && this.flags.cave_leverB) this.flags.cave_door = true;
+          if (this.flags.thorn_leverA && this.flags.thorn_seal) this.flags.thorn_gate = true;
         }
         break;
       }
@@ -2386,6 +2421,11 @@ class Game {
         this.flags[`boulder_${msg.id}`] = { x: msg.x, y: msg.y };
         const pr = this.world.props.find(p => p.type === 'boulder' && p.id === msg.id);
         if (pr) this.world.moveBoulder(pr, msg.x, msg.y);
+        // mirror the thorn-seal trip on guests/peers
+        if (pr?.target && msg.x === pr.target.x && msg.y === pr.target.y && !this.flags.thorn_seal) {
+          this.flags.thorn_seal = true;
+          this.checkThornGate();
+        }
         break;
       }
       case 'wardenDead': {
