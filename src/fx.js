@@ -36,6 +36,10 @@ const GLOW_PRESETS = {
   fishspot: {
     emissive: 0.12, light: false, flickerSpeed: 1.2, flickerAmt: 0.22, y: 0.2, fadeSpeed: 1.2,
   },
+  seal: {
+    emissive: 0.42, light: true, intensity: 1.3, distance: 2.4, decay: 2,
+    flickerSpeed: 3, flickerAmt: 0.18, y: 0.5, fadeSpeed: 2,
+  },
 };
 
 function smoothstep(t) {

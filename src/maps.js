@@ -758,8 +758,11 @@ function buildRouteThornwood() {
   rect(g, 30, 38, 6, 4, ',');                 // tallgrass nook hiding a cache
   rect(g, 6, 35, 4, 3, ',');                  // thicket by the entry
   rect(g, 13, 19, 4, 3, ',');                 // overgrowth by the lever
-  set(g, 29, 20, 'f');                        // the Thorn-Seal socket (marked in flowers)
-  set(g, 28, 20, 'f'); set(g, 30, 20, 'f'); set(g, 29, 19, 'f'); set(g, 29, 21, 'f');
+  // Thorn-Seal: a flower-ringed socket at (29,20) with a clear push-track running
+  // straight south to the wakestone's rest. The boulder only has to go due NORTH.
+  rect(g, 29, 20, 1, 5, 'p');                 // the lit push-track (x29, y20..24)
+  set(g, 28, 19, 'f'); set(g, 29, 19, 'f'); set(g, 30, 19, 'f'); // north arc of the socket
+  set(g, 27, 20, 'f'); set(g, 31, 20, 'f');   // side blooms framing the seal
 
   return {
     id: 'route_thornwood', name: 'THORNWOOD VERGE', majorType: 'forest_route', biome: 'hollow_thornwood',
@@ -776,14 +779,19 @@ function buildRouteThornwood() {
       { type: 'gateBig', id: 'thorn_gate', x: 30, y: 14, w: 4, openIf: 'thorn_gate' },
       // Puzzle half 1: a lever in the overgrown west of the Snare Hall
       { type: 'lever', id: 'thorn_leverA', x: 8, y: 20 },
-      // Puzzle half 2: roll the wakestone onto the flower-marked seal
-      { type: 'boulder', id: 'thorn_seed', x: 26, y: 24, target: { x: 29, y: 20 } },
-      { type: 'rock', x: 28, y: 19 }, { type: 'rock', x: 30, y: 21 }, // seal frame
+      // Puzzle half 2: roll the wakestone due NORTH onto the seal. The glowing
+      // marker shows the destination; chevrons light the track; flank rocks funnel
+      // the boulder so it can only travel straight up the lane.
+      { type: 'sealMarker', id: 'thorn_seal_mark', x: 29, y: 20, flag: 'thorn_seal' },
+      { type: 'boulder', id: 'thorn_seed', x: 29, y: 23, target: { x: 29, y: 20 } },
+      { type: 'pushArrow', x: 29, y: 22, unlessFlag: 'thorn_seal' },
+      { type: 'pushArrow', x: 29, y: 21, unlessFlag: 'thorn_seal' },
+      { type: 'rock', x: 28, y: 20 }, { type: 'rock', x: 30, y: 20 }, // seal frame / funnel
       // Signposts — wayfinding + teaching the new mechanics
       { type: 'sign', x: 22, y: 43, text: 'THORNWOOD VERGE — Briarfen lies north. The thorns keep their own contracts. The road bends; the woods do not.' },
       { type: 'sign', x: 12, y: 36, text: 'Thornlings root slow but bite deep — circle them, don\'t trade blows. Crawlers come quick, and in pairs.' },
       { type: 'sign', x: 11, y: 22, text: 'Thorn Compact waypost — contracts outlive heroes. WAKE THE LEVER, then the gate listens.' },
-      { type: 'sign', x: 27, y: 22, text: 'THORN-SEAL — the old wards want weight. Roll the wakestone onto the seal. (A revenant plants its feet before it swings — that windup is your opening.)' },
+      { type: 'sign', x: 26, y: 22, text: 'THORN-SEAL — the old wards want weight. STAND SOUTH of the wakestone and push it NORTH, up the lit track, onto the glowing seal. (A revenant plants its feet before it swings — that windup is your opening.)' },
       { type: 'sign', x: 34, y: 18, text: 'THORN-GATE — opens by lever AND seal both. The verge does not open by halves.' },
       { type: 'sign', x: 22, y: 12, text: 'BELL HOLLOW — something large keeps the north path. Briarfen\'s bell can\'t be heard past it. Yet.' },
       // Hidden cache in the tallgrass nook (cut to find)
@@ -811,7 +819,10 @@ function buildRouteThornwood() {
   };
 }
 
-/** Briarfen — Ch.3 thornwood market hub. */
+/** Briarfen — Ch.3 thornwood market hub. Unlike the grid-plaza vale towns, Briarfen
+ *  is a clearing girdled by a living thorn-hedge ring: a central green holds the
+ *  Bell-Gate, and timber-and-thatch cottages nest in the treeline, reached by
+ *  cardinal lanes that punch through gaps in the hedge. */
 function buildBriarfen() {
   const g = G(48, 40, '.');
   scatter(g, ':', 110, 61, '.');
@@ -821,34 +832,59 @@ function buildBriarfen() {
   scatter(g, '#', 38, 62, '.:');
   scatter(g, 'h', 24, 63, '.:');
   scatter(g, '^', 10, 64, '.:');
-  // South portal path and main north avenue
-  rect(g, 22, 38, 4, 2, 'p');
-  rect(g, 22, 4, 4, 34, 'p');
-  // Thorn market square (plaza) — wider than Eldermoor, stall-ring layout
-  rect(g, 14, 14, 20, 12, 'p');
-  // East connector to King's Descent gate
-  rect(g, 46, 14, 2, 12, 'p');
-  rect(g, 38, 14, 9, 2, 'p');
-  // Northwest pond: reason to linger — hollow pool with lily pads
-  rect(g, 3, 28, 7, 5, 'w');
-  rect(g, 3, 33, 7, 1, 's'); // sandy south shore
-  rect(g, 2, 27, 7, 1, 'F'); // fence along town side
-  // Flower beds around the market (first green color pocket — they'll glow after Glitch)
+
+  // --- the living thorn-hedge ring (broken at the four cardinal lanes) ---
+  const cxr = 24, cyr = 19, R = 9;
+  for (let y = cyr - R - 1; y <= cyr + R + 1; y++) {
+    for (let x = cxr - R - 1; x <= cxr + R + 1; x++) {
+      const dx = x - cxr, dy = y - cyr;
+      const dd = Math.hypot(dx, dy);
+      if (dd <= R + 0.6 && dd > R - 0.7) {
+        if (Math.abs(dx) < 2 || Math.abs(dy) < 2) continue; // leave the cardinal gaps open
+        set(g, x, y, 'h');
+      }
+    }
+  }
+  // short diagonal thorn buttresses jutting inward from the ring (depth, not a wall)
+  for (const [sx, sy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    for (let i = 0; i < 3; i++) set(g, cxr + sx * (6 + i), cyr + sy * (4 + i), 'h');
+  }
+
+  // --- central plaza disc + the four cardinal lanes ---
+  for (let y = cyr - 4; y <= cyr + 4; y++) {
+    for (let x = cxr - 4; x <= cxr + 4; x++) {
+      if (Math.hypot(x - cxr, y - cyr) <= 3.4) set(g, x, y, 'p');
+    }
+  }
+  rect(g, 23, 19, 2, 19, 'p');     // south lane → entrance
+  rect(g, 22, 37, 4, 3, 'p');      // south entrance apron (punches the border)
+  rect(g, 23, 9, 2, 10, 'p');      // north lane → Thorn Depths notice
+  rect(g, 5, 18, 42, 2, 'p');      // east–west avenue (through the W and E hedge gaps)
+  rect(g, 45, 14, 3, 6, 'p');      // east connector to King's Descent gate
+  // Bell-Gate platform: re-green the very centre so the shrine sits on flowers
+  rect(g, 23, 16, 2, 2, 'f');
+
+  // Crescent reflecting pool, SE green — a quiet linger spot
+  rect(g, 37, 30, 8, 4, 'w');
+  rect(g, 37, 34, 8, 1, 's');      // sandy south shore
+  rect(g, 36, 29, 9, 1, 'F');      // fence along the town side
+  // Flower beds in the open green — the first color pocket; brighten after the Glitch
   scatter(g, 'f', 18, 65, '.:');
-  rect(g, 15, 22, 2, 2, 'f'); rect(g, 29, 22, 2, 2, 'f');
-  rect(g, 15, 14, 2, 2, 'f'); rect(g, 29, 14, 2, 2, 'f');
-  // Small thorn-hedge nook (east side)
-  rect(g, 36, 22, 6, 6, '.');
-  rect(g, 36, 22, 6, 1, 'h'); rect(g, 36, 27, 6, 1, 'h');
-  rect(g, 36, 23, 1, 4, 'h'); rect(g, 41, 23, 1, 4, 'h');
-  set(g, 38, 27, '.'); set(g, 39, 27, '.'); // hedge nook entrance (south)
-  // Clear building footprints
+  rect(g, 19, 16, 2, 2, 'f'); rect(g, 28, 16, 2, 2, 'f');
+
+  // Clear building footprints — timber-and-thatch cottages tucked in the treeline
   const buildings = [
-    { x: 4, y: 4, w: 10, h: 7, door: { x: 9, y: 10 }, label: 'APOTHECARY', to: 'briarfen_apoth' },
-    { x: 32, y: 4, w: 11, h: 7, door: { x: 37, y: 10 }, label: 'THORN INN', to: 'briarfen_inn' },
-    { x: 5, y: 22, w: 12, h: 8, door: { x: 11, y: 29 }, label: 'TIMBER COMPACT', to: 'briarfen_compact' },
+    { x: 4, y: 5, w: 10, h: 7, door: { x: 9, y: 11 }, label: 'APOTHECARY', to: 'briarfen_apoth', style: 'thorn' },
+    { x: 34, y: 5, w: 11, h: 7, door: { x: 39, y: 11 }, label: 'THORN INN', to: 'briarfen_inn', style: 'thorn' },
+    { x: 4, y: 24, w: 12, h: 8, door: { x: 10, y: 31 }, label: 'TIMBER COMPACT', to: 'briarfen_compact', style: 'thorn' },
   ];
   for (const b of buildings) rect(g, b.x, b.y, b.w, b.h, '.');
+  // Door spokes — every cottage door spills onto a lane (no dead-ends)
+  rect(g, 9, 11, 2, 8, 'p');       // apothecary → avenue
+  rect(g, 38, 11, 2, 8, 'p');      // thorn inn → avenue
+  rect(g, 10, 31, 2, 6, 'p');      // timber compact → south
+  rect(g, 11, 35, 13, 2, 'p');     // ...and across to the south lane
+
   return {
     id: 'briarfen', name: 'BRIARFEN', majorType: 'market_town', biome: 'hollow_thornwood',
     colorPocket: 'briarfen',
@@ -861,60 +897,118 @@ function buildBriarfen() {
         lockMsg: 'East road sealed until the Thorn Matriarch falls — or Lace Harrow grants passage.' },
     ],
     props: [
-      // Bell-Gate — activated when glitch_active; gives fast-travel to Eldermoor/Ashfall
-      { type: 'shrine', id: 'bell_gate_briarfen', x: 18, y: 16 },
-      // Thorn market stalls (ring layout around the Bell-Gate)
-      { type: 'stall', x: 14, y: 18 }, { type: 'stall', x: 17, y: 18 },
-      { type: 'stall', x: 21, y: 18 }, { type: 'stall', x: 25, y: 18 },
-      // Lace Harrow's stall — slightly set back, signposted
-      { type: 'stall', x: 28, y: 16 },
-      { type: 'sign', x: 30, y: 16, text: 'LACE HARROW — Sovereign of Thorns. Thorn contracts don\'t expire. Neither do I.' },
-      // Meeting stump (community gather)
-      { type: 'bench', x: 21, y: 21 }, { type: 'bench', x: 24, y: 21 },
-      { type: 'rock', x: 22, y: 23 }, // meeting stump centre stone
-      // Bulletin board (quest hook / notice board)
-      { type: 'sign', x: 16, y: 13, text: 'BRIARFEN NOTICE BOARD — Matriarch Depths: bounty open. Bell-Gate: awaiting Concord clearance. Lost: one thorn contract. (Reward: another contract.)' },
-      // Fountain / market centrepiece
-      { type: 'fountain', x: 22.5, y: 17.5 },
-      // Lamps ringing the plaza
-      { type: 'lamp', x: 14, y: 14 }, { type: 'lamp', x: 31, y: 14 },
-      { type: 'lamp', x: 14, y: 25 }, { type: 'lamp', x: 31, y: 25 },
-      { type: 'lamp', x: 22, y: 5 }, { type: 'lamp', x: 25, y: 5 },
-      // Fishspot at the northwest pond
-      { type: 'fishspot', x: 5, y: 32 },
-      { type: 'bench', x: 10, y: 31 },
-      { type: 'sign', x: 10, y: 29, text: 'HOLLOW POOL — the fish here remember thorn-light. Cast at the green ripples.' },
-      // Signs
-      { type: 'sign', x: 22, y: 37, text: 'BRIARFEN — thorn market. Population: entangled.' },
-      { type: 'sign', x: 40, y: 15, text: 'EAST: King\'s Descent to Tidehaven (sealed).' },
-      { type: 'sign', x: 24, y: 3, text: 'NORTH: Thorn Depths — Matriarch territory. Active bounty.' },
-      // Hedge nook: memorial bench (linger spot)
-      { type: 'bench', x: 38, y: 25 },
-      { type: 'sign', x: 37, y: 23, text: 'Thorn nook — the locals call it the Quiet Bite. Nobody bites. It is quiet.' },
-      // Market clutter
-      { type: 'basket', x: 15, y: 20 }, { type: 'basket', x: 18, y: 20 },
-      { type: 'pot', x: 26, y: 20 }, { type: 'crate', x: 26, y: 17 },
-      { type: 'barrel', x: 13, y: 17 }, { type: 'crate', x: 33, y: 20 },
-      { type: 'pot', x: 33, y: 22 }, { type: 'barrel', x: 35, y: 21 },
-      // Sprinkle: laundry line behind Thorn Inn
-      { type: 'barrel', x: 34, y: 12 }, { type: 'pot', x: 36, y: 12 },
-      { type: 'sign', x: 42, y: 20, text: 'Thornwood Timber Co. — the trees here grew around contracts. They are extremely legally binding.' },
+      // Bell-Gate at the heart of the green — fast-travel once glitch_active
+      { type: 'shrine', id: 'bell_gate_briarfen', x: 23, y: 16 },
+      { type: 'fountain', x: 23.5, y: 19.5 }, // green centrepiece below the bell
+      // Thorn market — a clustered stall corner in the open green, not a tidy ring
+      { type: 'stall', x: 20, y: 23 }, { type: 'stall', x: 26, y: 24 },
+      { type: 'stall', x: 21, y: 25 },
+      // Lace Harrow's stall — set apart, signposted, facing the plaza
+      { type: 'stall', x: 27, y: 22 },
+      { type: 'sign', x: 29, y: 22, text: 'LACE HARROW — Sovereign of Thorns. Thorn contracts don\'t expire. Neither do I.' },
+      // Meeting stump + benches (community gather, N of the green)
+      { type: 'bench', x: 26, y: 16 }, { type: 'bench', x: 28, y: 16 },
+      { type: 'rock', x: 26, y: 15 }, // meeting stump centre stone
+      // Bulletin board by the south lane as you enter
+      { type: 'sign', x: 21, y: 24, text: 'BRIARFEN NOTICE BOARD — Matriarch Depths: bounty open. Bell-Gate: awaiting Concord clearance. Lost: one thorn contract. (Reward: another contract.)' },
+      // Lamps marking the hedge-gates and lanes
+      { type: 'lamp', x: 21, y: 13 }, { type: 'lamp', x: 27, y: 13 },
+      { type: 'lamp', x: 17, y: 18 }, { type: 'lamp', x: 31, y: 18 },
+      { type: 'lamp', x: 20, y: 25 }, { type: 'lamp', x: 28, y: 25 },
+      // SE reflecting pool linger spot
+      { type: 'fishspot', x: 40, y: 31 },
+      { type: 'bench', x: 38, y: 28 },
+      { type: 'sign', x: 36, y: 27, text: 'HOLLOW POOL — the fish here remember thorn-light. Cast at the green ripples.' },
+      // Wayfinding signs
+      { type: 'sign', x: 25, y: 36, text: 'BRIARFEN — thorn market. Population: entangled.' },
+      { type: 'sign', x: 43, y: 17, text: 'EAST: King\'s Descent to Tidehaven (sealed).' },
+      { type: 'sign', x: 22, y: 10, text: 'NORTH: Thorn Depths — Matriarch territory. Active bounty.' },
+      { type: 'sign', x: 12, y: 33, text: 'Thornwood Timber Co. — the trees here grew around contracts. They are extremely legally binding.' },
+      // Market clutter (kept within the open green)
+      { type: 'basket', x: 19, y: 22 }, { type: 'basket', x: 22, y: 22 },
+      { type: 'pot', x: 25, y: 25 }, { type: 'crate', x: 20, y: 21 },
+      { type: 'barrel', x: 18, y: 21 }, { type: 'crate', x: 29, y: 23 },
+      { type: 'pot', x: 28, y: 17 }, { type: 'barrel', x: 30, y: 24 },
     ],
     npcs: [
       // Lace Harrow — Sovereign of Thorns at her market stall (first proper meet)
-      { id: 'lace_briarfen', sprite: 'merchant', x: 29, y: 17, dir: 'down', dialog: 'lace_briarfen' },
-      // Apothecary merchant
-      { id: 'briarfen_apoth_npc', sprite: 'merchant', x: 22, y: 18, dir: 'down', dialog: 'briarfen_apoth' },
-      // Wandering townsfolk
-      { id: 'thornfolk1', sprite: 'villager', x: 20, y: 22, wander: 3, dialog: 'thornfolk_a' },
-      { id: 'thornfolk2', sprite: 'villager2', x: 26, y: 20, wander: 3, dialog: 'thornfolk_b' },
-      // Keeper Aurel — brief appearance (settles Lace/Marrick dispute off-screen, tips hat)
-      { id: 'keeper_aurel', sprite: 'elder', x: 15, y: 17, dir: 'right', dialog: 'keeper_aurel_briarfen' },
+      { id: 'lace_briarfen', sprite: 'merchant', x: 27, y: 23, dir: 'down', dialog: 'lace_briarfen' },
+      // Wandering townsfolk in the green
+      { id: 'thornfolk1', sprite: 'villager', x: 20, y: 17, wander: 3, dialog: 'thornfolk_a' },
+      { id: 'thornfolk2', sprite: 'villager2', x: 18, y: 24, wander: 3, dialog: 'thornfolk_b' },
+      // Keeper Aurel — brief appearance by the north lane
+      { id: 'keeper_aurel', sprite: 'elder', x: 24, y: 14, dir: 'down', dialog: 'keeper_aurel_briarfen' },
       // Post-glitch: Rival as grudging ally (conditionally present)
-      { id: 'rival_ally', sprite: 'guard', x: 28, y: 24, dir: 'down', dialog: 'rival_ally' },
+      { id: 'rival_ally', sprite: 'guard', x: 31, y: 22, dir: 'left', dialog: 'rival_ally' },
     ],
     enemies: [],
   };
+}
+
+/* =========================================================
+   INTERIORS — Briarfen (timber-and-thatch thornwood town)
+   ========================================================= */
+function buildBriarfenApoth() {
+  return interior('briarfen_apoth', 'THORNROOT APOTHECARY', 13, 10, 'o', (g, def) => {
+    rect(g, 2, 3, 9, 1, 'C');          // herb counter, gap at the east end
+    set(g, 10, 3, 'o');
+    rect(g, 4, 5, 3, 2, 'm');          // brewing rug
+    set(g, 6, 9, 'S'); set(g, 7, 9, 'S');
+    def.portals.push({ x: 6, y: 9, w: 2, h: 1, to: 'briarfen', tx: 9.5, ty: 12.5 });
+    def.npcs.push({ id: 'briarfen_apoth_npc', sprite: 'merchant', x: 5.5, y: 2.2, dir: 'down', dialog: 'briarfen_apoth', service: 'shop' });
+    def.props.push(
+      { type: 'fireplace', x: 11, y: 1 },       // tincture-brewing hearth
+      { type: 'bookshelf', x: 1, y: 1, text: 'Thornroot, dried in bundles. The smell is an acquired taste. No one has acquired it.' },
+      { type: 'bookshelf', x: 2, y: 1, text: 'Tonic recipes in Wren\'s hand. Step one of every recipe: "do not panic."' },
+      { type: 'bookshelf', x: 9, y: 1, text: 'A wall of little stoppered bottles, each labelled with a different month and a different mood.' },
+      { type: 'plant', x: 1, y: 4 }, { type: 'plant', x: 11, y: 4 },
+      { type: 'table', x: 5, y: 6 }, { type: 'stool', x: 4, y: 7 }, { type: 'stool', x: 6, y: 7 },
+      { type: 'barrel', x: 1, y: 7 }, { type: 'crate', x: 11, y: 7 },
+      { type: 'pot', x: 2, y: 6 },
+      { type: 'sign', x: 9, y: 6, text: '"A cure that smells nice is a cure that doesn\'t work." — Wren, probably defensively' },
+    );
+  });
+}
+function buildBriarfenInn() {
+  return interior('briarfen_inn', 'THE BRAMBLE REST', 16, 11, 'o', (g, def) => {
+    rect(g, 2, 3, 5, 1, 'C');          // bar counter, walk around east of x=6
+    rect(g, 9, 5, 4, 3, 'm');          // common-room rug
+    set(g, 7, 10, 'S'); set(g, 8, 10, 'S');
+    def.portals.push({ x: 7, y: 10, w: 2, h: 1, to: 'briarfen', tx: 39.5, ty: 12.5 });
+    def.npcs.push({ id: 'bramble_keep', sprite: 'villager', x: 4.5, y: 2.2, dir: 'down', dialog: 'briarfen_innkeep', service: 'inn' });
+    def.npcs.push({ id: 'bramble_patron', sprite: 'villager2', x: 11, y: 8, wander: 2, dialog: 'bramble_patron' });
+    def.props.push(
+      { type: 'bed', x: 1, y: 2 }, { type: 'bed', x: 1, y: 5 }, { type: 'bed', x: 1, y: 8 },
+      { type: 'fireplace', x: 14, y: 1 },
+      { type: 'table', x: 10, y: 5 }, { type: 'stool', x: 9, y: 6 }, { type: 'stool', x: 11, y: 6 },
+      { type: 'table', x: 13, y: 7 }, { type: 'stool', x: 13, y: 8 },
+      { type: 'table', x: 4, y: 7 }, { type: 'stool', x: 5, y: 7 },
+      { type: 'bookshelf', x: 12, y: 1, text: 'A shelf of thorn-wine. One bottle is just a thornbranch in water, labelled VINTAGE.' },
+      { type: 'plant', x: 8, y: 1 }, { type: 'plant', x: 14, y: 9 },
+      { type: 'barrel', x: 14, y: 4 }, { type: 'basket', x: 1, y: 1 },
+      { type: 'sign', x: 6, y: 9, text: 'THE BRAMBLE REST — beds soft, thorns optional, last call when Tilda says so.' },
+    );
+  });
+}
+function buildBriarfenCompact() {
+  return interior('briarfen_compact', 'THORN COMPACT HALL', 14, 11, 't', (g, def) => {
+    rect(g, 9, 2, 3, 2, 'W');          // strongbox vault block (NE corner)
+    rect(g, 4, 5, 5, 3, 'm');          // the great contract table's rug
+    set(g, 6, 10, 'S'); set(g, 7, 10, 'S');
+    def.portals.push({ x: 6, y: 10, w: 2, h: 1, to: 'briarfen', tx: 10.5, ty: 32.5 });
+    def.npcs.push({ id: 'compact_marrick', sprite: 'smith', x: 6.5, y: 4, dir: 'down', dialog: 'briarfen_marrick' });
+    def.props.push(
+      { type: 'fireplace', x: 1, y: 1 },
+      { type: 'rack', x: 11, y: 1 }, { type: 'rack', x: 12, y: 1 }, // logging tools / axes
+      { type: 'anvil', x: 12, y: 5 },                               // tool-mending
+      { type: 'table', x: 5, y: 6 }, { type: 'stool', x: 4, y: 7 }, { type: 'stool', x: 6, y: 7 },
+      { type: 'bookshelf', x: 3, y: 1, text: 'Bound ledgers of every Thornwood contract. The clasps are real thorns. They have drawn blood.' },
+      { type: 'bookshelf', x: 4, y: 1, text: 'Survey maps of the verge. Someone has redrawn the treeline in red, three times, getting closer.' },
+      { type: 'crate', x: 1, y: 8 }, { type: 'crate', x: 2, y: 8 }, { type: 'barrel', x: 12, y: 8 },
+      { type: 'pot', x: 1, y: 4 },
+      { type: 'sign', x: 9, y: 6, text: 'THORN COMPACT — by signing, the timber agrees to fall. The timber has not yet agreed. Negotiations ongoing.' },
+    );
+  });
 }
 
 /** King's Descent — cliff + river + tide flats, Briarfen east → Tidehaven west. */
@@ -1032,6 +1126,7 @@ export function buildAllMaps() {
     buildRoute1(), buildCave(), buildBossArena(),
     buildAshfall(), buildTavern(), buildCellar(), buildArmory(), buildArena(), buildTabbHouse(),
     buildRouteClaim(), buildClaimCave(), buildRouteThornwood(), buildBriarfen(),
+    buildBriarfenApoth(), buildBriarfenInn(), buildBriarfenCompact(),
     buildRouteSiltDescent(), buildTidehaven(),
   ]) {
     maps[m.id] = m;

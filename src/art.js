@@ -461,6 +461,17 @@ const BOULDER = [
   '.022221122220...','.022211222220...','..0222222220....','..0022222200....',
   '...00000000.....','................','................','................',
 ];
+// Upward chevron — guides the player along a push-track toward the seal.
+const PUSH_ARROW = [
+  '.......00.......',
+  '......0330......',
+  '.....033330.....',
+  '....03300330....',
+  '...0330..0330...',
+  '..0330....0330..',
+  '..030......030..',
+  '................',
+];
 const GRAVE = [
   '................','................','.....00000......','....0222220.....',
   '....0233320.....','....0222220.....','....0232220.....','....0222220.....',
@@ -1199,6 +1210,35 @@ export function paintOrb(big) {
   return c;
 }
 
+// Glowing thorn-seal target — concentric rune rings with a bright core, so the
+// player can read at a glance where the wakestone is meant to come to rest.
+export function paintSealMarker() {
+  const n = 32;
+  const [c, ctx] = makeCanvas(n, n);
+  const cx = n / 2, cy = n / 2;
+  const band = (r, wdt, shade, a = 1) => {
+    ctx.fillStyle = PAL[shade]; ctx.globalAlpha = a;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
+      if (d <= r && d > r - wdt) ctx.fillRect(x, y, 1, 1);
+    }
+    ctx.globalAlpha = 1;
+  };
+  band(15, 2.6, 0, 0.9);     // outer thorn ring (dark)
+  band(11, 2.0, 3, 0.95);    // glowing rune ring (bright)
+  band(7.5, 1.8, 1, 0.8);    // inner shadow groove
+  // bright center diamond (the socket the wakestone wants)
+  ctx.fillStyle = PAL[3];
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    if (Math.abs(x + 0.5 - cx) + Math.abs(y + 0.5 - cy) < 4.5) ctx.fillRect(x, y, 1, 1);
+  }
+  // cardinal thorn ticks notching the outer ring
+  ctx.fillStyle = PAL[0];
+  ctx.fillRect(cx - 1, 0, 2, 4); ctx.fillRect(cx - 1, n - 4, 2, 4);
+  ctx.fillRect(0, cy - 1, 4, 2); ctx.fillRect(n - 4, cy - 1, 4, 2);
+  return c;
+}
+
 /* ================= TILE TEXTURES (16x16 patterns) ================= */
 function tileCanvas(painter, seed = 1) {
   const [c, ctx] = makeCanvas(16, 16);
@@ -1450,6 +1490,24 @@ function buildTiles() {
     drawAscii(ctx, bush);
     grassBlade(ctx, 0, 14, 2, -1); grassBlade(ctx, 15, 13, 2, 1);
   });
+  // Thornwood-town building skins — distinct from the brick/shingle vale houses.
+  TILES.thatch = tileCanvas((ctx, r) => { // bundled-straw roof
+    fill(ctx, 1);
+    ctx.fillStyle = PAL[0];               // shadow line between courses
+    for (let y = 3; y < 16; y += 5) ctx.fillRect(0, y, 16, 1);
+    ctx.fillStyle = PAL[2];               // straw highlights (broken streaks)
+    for (let y = 0; y < 16; y += 5) for (let x = (y % 10 ? 1 : 3); x < 16; x += 4) ctx.fillRect(x, y, 1, 3);
+    speck(ctx, r, 0, 6);
+  }, 151);
+  TILES.timber = tileCanvas((ctx) => { // half-timbered plaster wall
+    fill(ctx, 2);                         // pale plaster infill
+    ctx.fillStyle = PAL[0];               // dark timber frame
+    ctx.fillRect(0, 0, 16, 2); ctx.fillRect(0, 7, 16, 2); ctx.fillRect(0, 14, 16, 2); // beams
+    ctx.fillRect(0, 0, 2, 16); ctx.fillRect(7, 0, 2, 16); ctx.fillRect(14, 0, 2, 16); // studs
+    ctx.fillStyle = PAL[1];               // diagonal brace in the lower panel
+    for (let i = 0; i < 5; i++) ctx.fillRect(2 + i, 9 + i, 2, 1);
+    ctx.fillRect(10, 3, 2, 1);            // peg detail in the upper panel
+  });
 }
 
 // Upright grass tuft sprites for 3D billboards (tall + short variants).
@@ -1519,6 +1577,8 @@ export const Art = {
     this.props.leverOff = asciiCanvas(LEVER_OFF);
     this.props.leverOn = asciiCanvas(LEVER_ON);
     this.props.boulder = asciiCanvas(BOULDER);
+    this.props.sealMarker = paintSealMarker();
+    this.props.pushArrow = asciiCanvas(PUSH_ARROW, 16, 8);
     this.props.grave = asciiCanvas(GRAVE);
     this.props.fountain = asciiCanvas(FOUNTAIN_PROP);
     this.props.gate = asciiCanvas(GATE_PROP);

@@ -2789,6 +2789,8 @@ addEventListener('keydown', (e) => {
   if (['arrowright', 'd'].includes(k)) input.right = true;
   if (!game.running) return;
 
+  if (k === '0') { e.preventDefault(); toggleDebugMenu(); return; } // debug town teleporter
+
   if (game.ui.shopOpen) {
     if (k === 'arrowup' || k === 'w') game.ui.shopNav(-1);
     if (k === 'arrowdown' || k === 's') game.ui.shopNav(1);
@@ -2839,13 +2841,65 @@ addEventListener('mousedown', (e) => {
   if (!game.running) return;
   if (game.fishing) { if (e.button === 0) game.fishingPress(); return; }
   if (game.ui.inDialog) { if (e.button === 0) game.ui.advanceDialog(); return; }
-  if (game.uiLock || game.player?.downed || (e.target.closest && e.target.closest('#panel, #shop, #death-screen, #end-screen, #downed-overlay'))) return;
+  if (game.uiLock || game.player?.downed || (e.target.closest && e.target.closest('#panel, #shop, #death-screen, #end-screen, #downed-overlay, #debug-menu'))) return;
   const aim = game.aimFromMouse(e.clientX, e.clientY);
   if (e.button === 0) { game.mouseHeld = true; game.tryBasic(aim); } // ability 1
   else if (e.button === 2) game.trySkill(0, aim);                    // ability 2
 });
 addEventListener('mouseup', (e) => { if (e.button === 0) game.mouseHeld = false; });
 addEventListener('blur', () => { game.mouseHeld = false; });
+
+/* ================= DEBUG · town teleporter (toggle with 0) ================= */
+const DEBUG_TOWNS = [
+  { id: 'town',      name: 'ELDERMOOR', x: 22.5, z: 18.5 }, // Ch.1 starting town
+  { id: 'ashfall',   name: 'ASHFALL',   x: 22,   z: 32.5 }, // Ch.2 ash city
+  { id: 'briarfen',  name: 'BRIARFEN',  x: 23.5, z: 33.5 }, // Ch.3 thornwood town
+  { id: 'tidehaven', name: 'TIDEHAVEN', x: 3,    z: 40   }, // Ch.4 port town
+];
+let _debugMenu = null;
+function buildDebugMenu() {
+  const box = document.createElement('div');
+  box.id = 'debug-menu';
+  box.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:9999;' +
+    'background:rgba(20,22,20,.94);border:2px solid #8e908e;border-radius:8px;padding:14px 16px;' +
+    'font-family:monospace;color:#f5f7f2;display:none;min-width:200px;box-shadow:0 8px 30px rgba(0,0,0,.6)';
+  const title = document.createElement('div');
+  title.textContent = 'DEBUG · TELEPORT';
+  title.style.cssText = 'font-weight:bold;letter-spacing:1px;margin-bottom:10px;text-align:center;color:#cdd0cb';
+  box.appendChild(title);
+  for (const t of DEBUG_TOWNS) {
+    const b = document.createElement('button');
+    b.textContent = t.name;
+    b.style.cssText = 'display:block;width:100%;margin:4px 0;padding:8px 10px;background:#2a2c2a;' +
+      'border:1px solid #5a5c5a;border-radius:4px;color:#f5f7f2;font-family:monospace;font-size:13px;' +
+      'cursor:pointer;text-align:left';
+    b.onmouseenter = () => { b.style.background = '#3c3e3c'; };
+    b.onmouseleave = () => { b.style.background = '#2a2c2a'; };
+    b.onclick = () => { debugWarp(t.id, t.x, t.z); toggleDebugMenu(false); };
+    box.appendChild(b);
+  }
+  const hint = document.createElement('div');
+  hint.textContent = 'press 0 to close';
+  hint.style.cssText = 'margin-top:8px;text-align:center;font-size:10px;color:#8e908e';
+  box.appendChild(hint);
+  (document.getElementById('game-root') || document.body).appendChild(box);
+  return box;
+}
+function toggleDebugMenu(force) {
+  if (!_debugMenu) _debugMenu = buildDebugMenu();
+  const show = force != null ? force : _debugMenu.style.display === 'none';
+  _debugMenu.style.display = show ? 'block' : 'none';
+}
+function debugWarp(id, x, z) {
+  if (!game.running || !game.maps[id]) return;
+  if (game.ui.shopOpen) game.ui.closeShop();
+  if (game.ui.panelOpen) game.ui.closePanel();
+  if (game.ui.inDialog) game.ui.endDialog?.();
+  if (game.net && game.net.connected) game.net.sendEvent('groupPortal', { to: id, tx: x, ty: z });
+  game.loadMap(id, x, z);
+  game.updateQuestUI?.();
+  game.toast?.('Debug warp → ' + id.toUpperCase());
+}
 
 /* ================= TITLE SCREEN ================= */
 function setupTitle() {

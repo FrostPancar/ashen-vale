@@ -375,8 +375,37 @@ export class World {
     return geo;
   }
 
+  // Hipped roof prism: a short ridge along x with all four sides sloping down to
+  // the eaves. Reads as a steeper, cottage-like roof distinct from the gable.
+  static hipRoofGeometry(w, d, h, ridgeFrac = 0.4) {
+    const hw = w / 2, hd = d / 2, hr = (w * ridgeFrac) / 2;
+    const slope = Math.hypot(hd, h);
+    const pos = [], uv = [];
+    const tri = (a, b, c, ua, ub, uc) => { pos.push(...a, ...b, ...c); uv.push(...ua, ...ub, ...uc); };
+    const quad = (a, b, c, e, ua, ub, uc, ue) => { tri(a, b, c, ua, ub, uc); tri(a, c, e, ua, uc, ue); };
+    const rW = [-hr, h, 0], rE = [hr, h, 0];
+    // south slope (trapezoid)
+    quad([-hw, 0, hd], [hw, 0, hd], rE, rW,
+         [0, 0], [w, 0], [hw + hr, slope], [hw - hr, slope]);
+    // north slope (trapezoid)
+    quad([hw, 0, -hd], [-hw, 0, -hd], rW, rE,
+         [0, 0], [w, 0], [hw + hr, slope], [hw - hr, slope]);
+    // west + east hips (triangles)
+    tri([-hw, 0, -hd], [-hw, 0, hd], rW, [0, 0], [d, 0], [d / 2, slope]);
+    tri([hw, 0, hd], [hw, 0, -hd], rE, [0, 0], [d, 0], [d / 2, slope]);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    geo.computeVertexNormals();
+    return geo;
+  }
+
   buildBuilding(b, mapW, mapH) {
-    const H = 1.7, ROOF_H = 0.9;
+    // Thornwood-town houses use timber-and-thatch with a steeper hipped roof.
+    const thorn = b.style === 'thorn';
+    const H = 1.7, ROOF_H = thorn ? 1.15 : 0.9;
+    const wallTexName = thorn ? 'timber' : 'wall';
+    const roofTexName = thorn ? 'thatch' : 'roof';
     // mark footprint solid
     for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) {
       this.solid[y * this.def.grid.w + x] = 1;
@@ -384,17 +413,20 @@ export class World {
     // doorway stays walkable so the portal can trigger
     this.solid[b.door.y * this.def.grid.w + b.door.x] = 0;
     const cx = b.x + b.w / 2, cz = b.y + b.h / 2;
-    const wallMat = new THREE.MeshLambertMaterial({ map: tileTex('wall') });
+    const wallMat = new THREE.MeshLambertMaterial({ map: tileTex(wallTexName) });
     wallMat.map = wallMat.map.clone();
     wallMat.map.repeat.set(b.w, 2); wallMat.map.wrapS = wallMat.map.wrapT = THREE.RepeatWrapping;
     const body = new THREE.Mesh(new THREE.BoxGeometry(b.w, H, b.h - 0.4), wallMat);
     body.position.set(cx, H / 2, cz - 0.2);
     this.group.add(body);
-    // roof: gabled (ridge along x), built to the building's footprint with a small overhang
-    const roofMat = new THREE.MeshLambertMaterial({ map: tileTex('roof') });
+    // roof: gabled in the vale, hipped-and-thatched in the thornwood town
+    const roofMat = new THREE.MeshLambertMaterial({ map: tileTex(roofTexName) });
     roofMat.map = roofMat.map.clone();
     roofMat.map.wrapS = roofMat.map.wrapT = THREE.RepeatWrapping;
-    const roof = new THREE.Mesh(World.gableRoofGeometry(b.w + 0.5, b.h - 0.4 + 0.5, ROOF_H), roofMat);
+    const roofGeo = thorn
+      ? World.hipRoofGeometry(b.w + 0.5, b.h - 0.4 + 0.5, ROOF_H)
+      : World.gableRoofGeometry(b.w + 0.5, b.h - 0.4 + 0.5, ROOF_H);
+    const roof = new THREE.Mesh(roofGeo, roofMat);
     roof.position.set(cx, H - 0.04, cz - 0.2);
     this.group.add(roof);
     // door plane on south face
@@ -484,6 +516,19 @@ export class World {
         }
         inst.dyn = { x: p.x, y: p.y, w: wid, h: 1, active: !open, id: p.id };
         this.dynamicSolids.push(inst.dyn);
+        break;
+      }
+      case 'sealMarker': {
+        // glowing target reticle marking where the wakestone must come to rest
+        const m = add(Art.props.sealMarker, 1.15, 1.15, 0.3);
+        m.position.set(p.x + 0.5, 0.05, p.y + 0.9);
+        this._attachGlow(inst, 'seal');
+        break;
+      }
+      case 'pushArrow': {
+        // directional hint along the push-track; spawned unless the seal is solved
+        add(Art.props.pushArrow, 0.7, 0.7, 0.2);
+        this._attachGlow(inst, 'seal');
         break;
       }
       case 'grave': add(Art.props.grave, 0.8, 0.8); inst.solid = true; break;

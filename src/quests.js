@@ -354,6 +354,32 @@ export const DIALOGS = {
     shop: 'shop',
   }),
 
+  briarfen_innkeep: (g) => ({
+    pages: [
+      { name: 'TILDA', text: 'The Bramble Rest. Beds are soft, the thorns are decorative, and the wine is — well, it\'s in a bottle. Rest up?' },
+    ],
+    onDone: (g) => g.restAtInn(),
+  }),
+
+  bramble_patron: () => ({
+    pages: [{ name: 'OSK', text: 'Slept here every night of the logging season. The brambles tap the window like they\'re counting us. Sleep great, though.' }],
+  }),
+
+  briarfen_marrick: (g) => {
+    if (g.flags.matriarch_dead) return {
+      pages: [
+        { name: 'FOREMAN MARRICK', text: 'Matriarch\'s fallen and the Compact still won\'t let us fell a single trunk. Turns out the contracts outlived the thing enforcing them. Lace is delighted.' },
+        { name: 'FOREMAN MARRICK', text: 'East road\'s yours, hero. King\'s Descent runs down to Tidehaven. Mind the tide — it keeps its own contracts too.' },
+      ],
+    };
+    return {
+      pages: [
+        { name: 'FOREMAN MARRICK', text: 'Thornwood Timber Co. — on paper. In practice the trees here signed nothing and fight every clause. We log by negotiation now.' },
+        { name: 'FOREMAN MARRICK', text: 'Lace says the Matriarch in the Depths holds the master contract. Break that, and maybe the wood lets us breathe. Maybe.' },
+      ],
+    };
+  },
+
   keeper_aurel_briarfen: (g) => {
     if (!g.flags.glitch_active) return {
       pages: [
