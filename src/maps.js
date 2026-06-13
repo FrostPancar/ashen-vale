@@ -666,6 +666,7 @@ function buildClaimCave() {
   rect(g, 18, 14, 4, 8, 'c');    // north corridor
   rect(g, 8, 8, 24, 6, 'c');     // main hall + arena
   rect(g, 16, 2, 8, 6, 'c');     // gem vault
+  rect(g, 19, 0, 2, 2, 'c');     // north exit spur to portal
   // Scattered rock protrusions — gives the cave walls texture
   for (const [x, y] of [[10,10],[14,9],[28,9],[30,11],[11,12],[31,12],[17,14],[22,14]]) set(g, x, y, 'r');
   set(g, 19, 30, 'S'); set(g, 20, 30, 'S');

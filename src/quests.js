@@ -294,18 +294,24 @@ export const DIALOGS = {
   /* ================= RIVAL / VOSS SCENE (gem vault) ================= */
 
   rival: (g) => {
+    if (g.flags.rival_state === 'ally' || g.flags.rival_state === 'glitched') return {
+      pages: [
+        { name: '???', text: 'What you see in color now — the vale always had it. Someone decided it shouldn\'t.' },
+        { name: '???', text: 'The gem was the proof. We cracked it open. Now we follow the light to whoever sealed it away.' },
+      ],
+    };
     if (g.flags.rival_state === 'met') return {
-      pages: [{ name: '???', text: 'Don\'t touch the gem again. We already know what it does.' }],
+      pages: [{ name: '???', text: 'Stay focused. The gem is already open — don\'t let Voss tell you what just happened.' }],
     };
     return {
       pages: [
-        { name: '???', text: 'You\'re the bodyguard. I\'m the problem. Try not to die — it\'d ruin my evening.' },
-        { name: '???', text: 'The gem is right there. Light that doesn\'t belong in the vale. Interesting thing for a mine to find.' },
-        { name: '???', text: 'I\'ve crossed enough claims to know this one won\'t close clean. Force of habit.' },
-        { name: 'DIRECTOR VOSS', text: 'Ah. Both parties at the gem. Efficient. The ledger approves even when I don\'t.' },
-        { name: 'DIRECTOR VOSS', text: 'That\'s the claimant I mentioned. You\'re on my lease. The clause is INTERVENTION. Do your job.' },
-        { name: '???', text: 'Your employer smiles like a ledger. How fitting.' },
-        { name: '???', text: '...Come on, then. The contract requires it.' },
+        { name: '???', text: 'That light. ...You noticed it too. Good.' },
+        { name: '???', text: 'That gem is older than this mine. Older than the contracts, the claim roads — older than the gray itself. It remembers what the vale looked like before.' },
+        { name: '???', text: 'I\'ve stood in this vault before. Reached for it alone. It doesn\'t open that way.' },
+        { name: 'DIRECTOR VOSS', text: 'Both claimants at the gem. The intervention clause applies. You know your assignment.' },
+        { name: 'DIRECTOR VOSS', text: 'Whatever that gem is, it stays sealed. The vale\'s stability depends on it — stop them.' },
+        { name: '???', text: 'Voss keeps the gray because order is good for ledgers. Don\'t let that be why you draw.' },
+        { name: '???', text: 'I need to know you can hold your ground when everything breaks open. Because it will.' },
       ],
       onDone: (g) => {
         g.flags.rival_state = 'met';
@@ -376,9 +382,9 @@ export const DIALOGS = {
       pages: [{ name: '???', text: 'Not here yet. Or here already and choosing not to be found. Hard to say.' }],
     };
     const meta = [
-      'You always forget the part that hurts. That\'s why they ring the bell.',
-      'This is the furthest I\'ve been without the gray collapsing. New territory. Don\'t celebrate — it means the hard part starts.',
-      'The Matriarch is in the Depths. She knows we\'re here. She\'s been waiting for the color too.',
+      'The gray recedes — it doesn\'t die. Whoever drained this vale built in a way back. We need to reach the source before it closes.',
+      'I don\'t know how many times I\'ve run this road. Each time the gray took me before I could ask the right question. This time the color is still here.',
+      'The Matriarch sealed herself in the Depths before the gray came. She\'s been waiting for someone to arrive with the color still on them. That\'s us now.',
     ];
     const t = meta[(g.flags.rival_meet_n || 0) % meta.length];
     return {

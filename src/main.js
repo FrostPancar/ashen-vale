@@ -296,6 +296,10 @@ class Game {
       const lbl = makeLabel(nd.id === 'elder' ? 'MAREN' : nd.id.toUpperCase().replace(/\d/g, ''));
       lbl.position.y = 1.1;
       npc.sprite.group.add(lbl);
+      // hide the gem-vault stranger once the rival fight has fired
+      if (nd.id === 'stranger' && this.flags.rival_state) {
+        npc.sprite.group.visible = false;
+      }
       this.scene.add(npc.sprite.group);
       this.npcs.push(npc);
     }
@@ -303,6 +307,7 @@ class Game {
     if (!this.net.connected || this.net.isHost) {
       for (const ed of def.enemies) {
         if (ed.boss && this.flags.warden_dead) continue;
+        if (ed.scale?.name === 'THORNWARDEN' && this.flags.thornwarden_dead) continue;
         const e = ed.type === 'dummy'
           ? new Enemy(ed.type, ed.x, ed.y)
           : this.scaledEnemy(ed.type, ed.x, ed.y, ed.scale);
@@ -1013,6 +1018,7 @@ class Game {
             this.world.moveBoulder(pr, nx, nz);
             this.flags[`boulder_${pr.id}`] = { x: nx, y: nz };
             SFX.push();
+            this.shake(0.35);
             this.fx.particles(new THREE.Vector3(nx + 0.5, 0, nz + 0.5), 4, 1);
             this.net.sendEvent('boulder', { id: pr.id, x: nx, y: nz });
             // wakestone seated on a thorn-seal → trip the seal half of the puzzle
@@ -1842,6 +1848,12 @@ class Game {
       damagers, xp: enemy.def.xp,
     });
     if (enemy.def.boss) this.onBossDead(enemy);
+    // Thornwarden elite — mark dead so it doesn't respawn
+    if (enemy.eliteName === 'THORNWARDEN' && !this.flags.thornwarden_dead) {
+      this.flags.thornwarden_dead = true;
+      this.toast('THORNWARDEN FELLED — the bell hollow falls quiet.', true);
+      this.save();
+    }
     // Tilly's cellar problem
     if (this.mapId === 'cellar' && enemy.type === 'rat' && this.flags.rats_q === 1) {
       this.flags.rats_killed = (this.flags.rats_killed || 0) + 1;
@@ -1892,9 +1904,9 @@ class Game {
       fn: () => {
         this.uiLock = false;
         this.ui.startDialog([
-          { name: '???', text: 'Enough. ...You\'re better than I expected.' },
-          { name: '???', text: 'The gem is right there. We both know we\'re going to touch it. Stop pretending otherwise.' },
-          { name: 'DIRECTOR VOSS', text: 'This is not in the contract. THIS IS NOT IN THE CONTRACT—' },
+          { name: '???', text: '...Alright. That\'s enough.' },
+          { name: '???', text: 'I\'ve run this road before — alone. I never made it past this moment. I think I finally understand why.' },
+          { name: 'DIRECTOR VOSS', text: 'This is NOT in the contract — do not touch that gem, both of you, it is SEALED for a REASON—' },
         ], () => this.fireGlitch());
       },
     });
@@ -1942,10 +1954,10 @@ class Game {
       this.uiLock = false;
       this.applyMapTint(this.mapId);
       this.ui.startDialog([
-        { name: '???', text: 'That was a short run. Sit down before you waste another.' },
-        { name: '???', text: 'The gem is cracked. Did you feel that? Everything wrong. Everything right.' },
-        { name: '???', text: 'The gray was a lie. I knew it — I have run this far before. But never through the color.' },
-        { name: '???', text: '...Come on. Thornwood is north. The vale changed. We\'re not done.' },
+        { name: '???', text: 'There. The light underneath — that\'s not an accident. That\'s what was buried.' },
+        { name: '???', text: 'The gray isn\'t the vale\'s natural state. Something stripped it. Something with enough authority to rewrite what a place is.' },
+        { name: '???', text: 'I\'ve come this far before and the gray always swallowed me back. But the color is out now. That changes what\'s possible.' },
+        { name: '???', text: 'Thornwood is north. The Matriarch has been waiting at the center of this for a long time. I think she\'ll talk to us now.' },
       ], () => {
         this.flags.rival_state = 'ally';
         this.setStage(12);
