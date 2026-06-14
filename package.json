@@ -10,7 +10,8 @@
     "server": "node server.js",
     "start": "node server.js & vite",
     "viewer": "vite --open /tools/sprite-viewer/",
-    "pixel-gen": "vite --open /tools/pixel-generator/"
+    "pixel-gen": "vite --open /tools/pixel-generator/",
+    "map-builder": "vite --open /tools/map-builder/"
   },
   "dependencies": {
     "three": "^0.165.0",

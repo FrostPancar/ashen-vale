@@ -1,5 +1,21 @@
 # Dev tools
 
+## Map builder
+
+Interactive editor for maps & interiors. Paint terrain, place props / NPCs / enemies / portals / buildings from an organized asset library (every tile and sprite is pulled live from `src/art.js`, so previews match the game), toggle between **top-down 2D** and **2.5D** views, author what interactable objects say or do (dialog boxes, chest loot, lever ids, portal targets/locks), and load any existing game map or interior to edit.
+
+**Run:** `npm run map-builder`, or start `npm run dev` and open http://localhost:5173/tools/map-builder/ (also `/map-builder`).
+
+**Interactables** carry a badge on the canvas (💬 NPC dialog, ▤ sign, ❏ bookshelf, ▣ chest, ⌐ lever, ⬡ portal). Select one to edit its dialog/behaviour in the right-hand inspector.
+
+**Export → import in game:**
+
+- **Save to project** writes `src/maps/custom/<id>.json`. `src/customMaps.js` auto-registers every file there into `buildAllMaps()` at startup — terrain, props, NPCs, portals, enemies and authored dialog — with **no code edits**. Just give the map a unique id and reference it from a portal `to:`.
+- **Download JSON** gives you the same `ashen-vale-map@1` artifact to commit or share.
+- **Copy as JS** emits a paste-ready `buildXxx()` for `src/maps.js` if you'd rather make it a built-in map.
+
+**Files** (`tools/map-builder/`): `index.html` shell · `style.css` UI · `catalog.js` asset library + previews · `render.js` 2D/2.5D canvas · `serialize.js` doc↔map↔JSON · `main.js` app. Runtime loader: `src/customMaps.js`.
+
 ## Pixel art generator
 
 AI-assisted prop creator for `src/art.js`. Enter an object name, get 4 ASCII sprite variants in the game's 4-shade format, preview them, and copy paste-ready `const` blocks.

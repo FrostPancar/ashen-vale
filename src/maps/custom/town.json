@@ -1,0 +1,305 @@
+{
+  "schema": "ashen-vale-map@1",
+  "id": "town",
+  "name": "ELDERMOOR",
+  "interior": false,
+  "floor": ".",
+  "ambient": "day",
+  "music": "town",
+  "w": 46,
+  "h": 38,
+  "rows": [
+    "#####################pppp#####################",
+    "#####################pppp#####################",
+    "##...###.#...####.....pp....####....###.....##",
+    "##.:.......:......:...pp..........:..:......##",
+    "##.:........:......h..pp:.h:................##",
+    "##................fh..pp..h..:..............##",
+    "##:................h..pp..h................###",
+    "###................h..pp..h.............#..###",
+    "###................h..pp..h..............:.###",
+    "###.............:..h..pp..h................###",
+    "###...................pp..:..............:.###",
+    "##..............f...ffpp......#...p.......:###",
+    "##.:...h.pph...fffffffpp.......#.pp....FFF:.##",
+    "##..:.....p...ff.fffffpp....ff....p..,,,,,..##",
+    "###ffff...p...f...ffppppppffff....p..,,,,,:.##",
+    "###.ffff..pp......fppppppppf......p...,,,,:###",
+    "###.ffff...ppppppppppppppppp..:...p........###",
+    "###.ffff.........pppppppppppp...pp.....#:..###",
+    "##..:.............ppppppppppppppp....:.....###",
+    "##.#..............pppppppppp.....:..........##",
+    "####.....#...:....fppppppppf..:.............##",
+    "####............ffffppppppffffff............##",
+    "####............ff....ppffffffff............##",
+    "###...................pp...................###",
+    "###...................pp:...:..............###",
+    "###.:.........:.......pppp..................##",
+    "###............:......pp..pppp....pp.......:##",
+    "###.......ppp........ppp.....pppppp.:......###",
+    "###.........ppppppppppp............pp.....####",
+    "##..FFFFF.....:................:..FFssFFFFFF##",
+    "##..wwwwwFFFF..........:......:...FssssssssF##",
+    "##..wwwwwwwww.,,,,.....:..........FssssssssF##",
+    "##..wwwwwwwww.,,,,......:.#.#.:.:.FssssssssF##",
+    "###.wwwwwwwww.,,,,.........##.::::FssssssssF##",
+    "###.wwwwwwwww........#..##...#::::FssssssssF##",
+    "##..sssssssss#.....:##########::::FssssssssF##",
+    "####sssssssss###################::FFFFFFFFFF##",
+    "###sssssssssss################################"
+  ],
+  "buildings": [
+    {
+      "x": 5,
+      "y": 5,
+      "w": 9,
+      "h": 7,
+      "door": {
+        "x": 9,
+        "y": 11
+      },
+      "label": "ELDER HALL",
+      "to": "elder_house"
+    },
+    {
+      "x": 30,
+      "y": 4,
+      "w": 10,
+      "h": 7,
+      "door": {
+        "x": 34,
+        "y": 10
+      },
+      "label": "INN",
+      "to": "inn"
+    },
+    {
+      "x": 6,
+      "y": 21,
+      "w": 8,
+      "h": 6,
+      "door": {
+        "x": 10,
+        "y": 26
+      },
+      "label": "SHOP",
+      "to": "shop"
+    },
+    {
+      "x": 32,
+      "y": 20,
+      "w": 8,
+      "h": 6,
+      "door": {
+        "x": 35,
+        "y": 25
+      },
+      "label": "SMITHY",
+      "to": "smithy"
+    }
+  ],
+  "portals": [
+    {
+      "x": 21,
+      "y": 0,
+      "w": 4,
+      "h": 1,
+      "to": "route1",
+      "tx": 20,
+      "ty": 69,
+      "requires": "tut_done",
+      "lockMsg": "GUARD: \"Hold, hero. Elder Maren asked for you first — her hall is west of the plaza.\""
+    }
+  ],
+  "props": [
+    {
+      "type": "fountain",
+      "x": 22.5,
+      "y": 17.5
+    },
+    {
+      "type": "lamp",
+      "x": 18,
+      "y": 14
+    },
+    {
+      "type": "lamp",
+      "x": 27,
+      "y": 14
+    },
+    {
+      "type": "lamp",
+      "x": 18,
+      "y": 21
+    },
+    {
+      "type": "lamp",
+      "x": 27,
+      "y": 21
+    },
+    {
+      "type": "bench",
+      "x": 20,
+      "y": 21
+    },
+    {
+      "type": "bench",
+      "x": 25,
+      "y": 21
+    },
+    {
+      "type": "bench",
+      "x": 15,
+      "y": 29
+    },
+    {
+      "type": "sign",
+      "x": 20,
+      "y": 13,
+      "text": "ELDERMOOR — last lit hearth before the Hollow Road."
+    },
+    {
+      "type": "sign",
+      "x": 39,
+      "y": 28,
+      "text": "TRAINING YARD — strike the dummies. LEFT CLICK to attack. SPACE for your heavy skill — it sends things FLYING."
+    },
+    {
+      "type": "chest",
+      "x": 41,
+      "y": 4,
+      "id": "town_chest",
+      "loot": "bundle:gold:18-28|potion:1|item:trinket:common"
+    },
+    {
+      "type": "fishspot",
+      "x": 7,
+      "y": 34
+    },
+    {
+      "type": "crate",
+      "x": 36,
+      "y": 31
+    },
+    {
+      "type": "pot",
+      "x": 41,
+      "y": 31
+    },
+    {
+      "type": "pot",
+      "x": 41,
+      "y": 34
+    },
+    {
+      "type": "pot",
+      "x": 19,
+      "y": 13
+    },
+    {
+      "type": "barrel",
+      "x": 27,
+      "y": 13
+    },
+    {
+      "type": "crate",
+      "x": 37,
+      "y": 11
+    },
+    {
+      "type": "barrel",
+      "x": 31,
+      "y": 22
+    },
+    {
+      "type": "pot",
+      "x": 12,
+      "y": 27
+    },
+    {
+      "type": "rock",
+      "x": 14,
+      "y": 30
+    },
+    {
+      "type": "crate",
+      "x": 38,
+      "y": 11
+    },
+    {
+      "type": "barrel",
+      "x": 31,
+      "y": 24
+    },
+    {
+      "type": "bulletinBoard",
+      "x": 25,
+      "y": 14
+    },
+    {
+      "type": "woodpile",
+      "x": 14,
+      "y": 25
+    },
+    {
+      "type": "woodpile",
+      "x": 14,
+      "y": 24
+    }
+  ],
+  "npcs": [
+    {
+      "id": "guard",
+      "sprite": "guard",
+      "x": 22.5,
+      "y": 3.5,
+      "dir": "down",
+      "dialog": "guard"
+    },
+    {
+      "id": "villager1",
+      "sprite": "villager",
+      "x": 26,
+      "y": 19,
+      "dir": "down",
+      "wander": 3,
+      "dialog": "villager1"
+    },
+    {
+      "id": "villager2",
+      "sprite": "villager2",
+      "x": 16,
+      "y": 24,
+      "dir": "down",
+      "wander": 3,
+      "dialog": "villager2"
+    },
+    {
+      "id": "kid",
+      "sprite": "villager2",
+      "x": 30,
+      "y": 15,
+      "dir": "down",
+      "wander": 4,
+      "dialog": "kid"
+    }
+  ],
+  "enemies": [
+    {
+      "type": "dummy",
+      "x": 37,
+      "y": 32
+    },
+    {
+      "type": "dummy",
+      "x": 40,
+      "y": 32
+    },
+    {
+      "type": "dummy",
+      "x": 38.5,
+      "y": 34.5
+    }
+  ],
+  "dialogs": {}
+}

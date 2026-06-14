@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ashen Vale — Map Builder</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Left: asset library + map library -->
+    <aside id="left">
+      <header class="brand">ASHEN VALE<span>MAP BUILDER</span></header>
+
+      <section class="panel" id="tools-panel">
+        <h2>Tools</h2>
+        <div class="toolbar" id="tools"></div>
+      </section>
+
+      <section class="panel grow" id="library-panel">
+        <h2>Asset Library</h2>
+        <div class="tabs" id="lib-tabs"></div>
+        <div class="lib-grid" id="lib-grid"></div>
+      </section>
+
+      <section class="panel" id="maps-panel">
+        <h2>Map Library <button class="mini" id="reload-maps" title="refresh">↻</button></h2>
+        <div class="row gap">
+          <button class="btn sm" id="new-map">+ Map</button>
+          <button class="btn sm" id="new-interior">+ Interior</button>
+        </div>
+        <div class="map-list" id="map-list"></div>
+      </section>
+    </aside>
+
+    <!-- Center: canvas + view controls -->
+    <main id="center">
+      <div id="topbar">
+        <div class="seg" id="mode-seg">
+          <button data-mode="top" class="active">Top-down 2D</button>
+          <button data-mode="2.5d">2.5D</button>
+        </div>
+        <div class="spacer"></div>
+        <label class="chk"><input type="checkbox" id="opt-grid" checked /> Grid</label>
+        <label class="chk"><input type="checkbox" id="opt-badges" checked /> Badges</label>
+        <label class="chk"><input type="checkbox" id="opt-structures" checked /> Houses</label>
+        <label class="chk"><input type="checkbox" id="opt-solids" /> Collision</label>
+        <div class="spacer"></div>
+        <button class="btn sm" id="zoom-out">−</button>
+        <button class="btn sm" id="zoom-fit">Fit</button>
+        <button class="btn sm" id="zoom-in">+</button>
+        <button class="btn sm" id="undo" title="Ctrl+Z">↶</button>
+        <button class="btn sm" id="redo" title="Ctrl+Y">↷</button>
+      </div>
+      <div id="stage"><canvas id="canvas"></canvas></div>
+      <div id="statusbar"><span id="status">Ready.</span></div>
+    </main>
+
+    <!-- Right: inspector + export -->
+    <aside id="right">
+      <section class="panel" id="inspector-panel">
+        <h2 id="insp-title">Map Settings</h2>
+        <div id="inspector"></div>
+      </section>
+      <section class="panel" id="export-panel">
+        <h2>Export / Import</h2>
+        <div class="export-grid">
+          <button class="btn" id="ex-download">⬇ Download JSON</button>
+          <button class="btn" id="ex-save">💾 Save to project</button>
+          <button class="btn" id="ex-js">📋 Copy as JS</button>
+          <button class="btn" id="ex-import">⬆ Import JSON</button>
+        </div>
+        <input type="file" id="file-input" accept="application/json" hidden />
+        <p class="hint">Saved maps land in <code>src/maps/custom/</code> and auto-load in game.</p>
+      </section>
+    </aside>
+  </div>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

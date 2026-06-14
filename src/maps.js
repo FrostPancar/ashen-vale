@@ -27,6 +27,20 @@ export const TILDEF = {
   'S': { tex: 'stairs', solid: false },
   'C': { tex: 'counter', solid: true, tall: true },
   'X': { tex: 'citywall', solid: true, tall: true },
+  // extra terrain (richer maps) — d dirt g gravel k cobble u mud n snow i ice
+  // a ash q marble y darkwood z rug l forestfloor j crackedstone
+  'd': { tex: 'dirt', solid: false },
+  'g': { tex: 'gravel', solid: false },
+  'k': { tex: 'cobble', solid: false },
+  'u': { tex: 'mud', solid: false },
+  'n': { tex: 'snow', solid: false },
+  'i': { tex: 'ice', solid: false },
+  'a': { tex: 'ash', solid: false },
+  'q': { tex: 'marble', solid: false },
+  'y': { tex: 'darkwood', solid: false },
+  'z': { tex: 'rug', solid: false },
+  'l': { tex: 'forestfloor', solid: false },
+  'j': { tex: 'crackedstone', solid: false },
 };
 
 // Biome scatter tables — density fractions applied to open ground tiles.

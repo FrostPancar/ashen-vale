@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { Art, blitTo } from './art.js';
 import { buildAllMaps } from './maps.js';
+import { applyCustomMaps } from './customMaps.js';
 import { World, CAM_OFF } from './world.js';
 import {
   Player, Enemy, Npc, RemotePlayer, Projectile, Drop, ENEMY_TYPES, dirToVec, makeLabel,
@@ -33,6 +34,7 @@ const FISH_NAMES = ['Bristlefin', 'Grey Chimer', 'Mudbell', 'Pondlord', 'Sootsca
 class Game {
   constructor() {
     this.maps = buildAllMaps();
+    applyCustomMaps(this.maps, DIALOGS); // Map Builder exports in src/maps/custom/ override built-ins by id
     this.skillsApi = { xpForLevel };
     this.flags = { stage: 0, dummies_n: 0 };
     this.uiLock = false;

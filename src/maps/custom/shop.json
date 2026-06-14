@@ -1,0 +1,103 @@
+{
+  "schema": "ashen-vale-map@1",
+  "id": "shop",
+  "name": "VALE GOODS",
+  "interior": true,
+  "floor": "o",
+  "ambient": "interior",
+  "music": "town",
+  "w": 12,
+  "h": 10,
+  "rows": [
+    "WWWWWWWWWWWW",
+    "WooooooooooW",
+    "WooooooooooW",
+    "WCCCCCCCoCCW",
+    "WooooooooooW",
+    "WooooooooooW",
+    "WooooooooooW",
+    "WooooooooooW",
+    "WooooooooooW",
+    "WWWWWSSWWWWW"
+  ],
+  "buildings": [],
+  "portals": [
+    {
+      "x": 5,
+      "y": 9,
+      "w": 2,
+      "h": 1,
+      "to": "town",
+      "tx": 10.5,
+      "ty": 27.5
+    }
+  ],
+  "props": [
+    {
+      "type": "bookshelf",
+      "x": 2,
+      "y": 1,
+      "text": "Jars of pickled... something. The labels just say DO ASK."
+    },
+    {
+      "type": "bookshelf",
+      "x": 3,
+      "y": 1,
+      "text": "Tonic crates, stacked with terrifying confidence."
+    },
+    {
+      "type": "plant",
+      "x": 10,
+      "y": 1
+    },
+    {
+      "type": "plant",
+      "x": 1,
+      "y": 1
+    },
+    {
+      "type": "bench",
+      "x": 2,
+      "y": 5
+    },
+    {
+      "type": "bench",
+      "x": 4,
+      "y": 5
+    },
+    {
+      "type": "table",
+      "x": 2,
+      "y": 6
+    },
+    {
+      "type": "table",
+      "x": 4,
+      "y": 6
+    },
+    {
+      "type": "chest",
+      "x": 4,
+      "y": 1,
+      "id": "chest_1"
+    },
+    {
+      "type": "barrel",
+      "x": 9,
+      "y": 1
+    }
+  ],
+  "npcs": [
+    {
+      "id": "merchant",
+      "sprite": "merchant",
+      "x": 5.5,
+      "y": 2.2,
+      "dir": "down",
+      "service": "shop",
+      "dialog": "merchant"
+    }
+  ],
+  "enemies": [],
+  "dialogs": {}
+}

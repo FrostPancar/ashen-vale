@@ -1,0 +1,214 @@
+{
+  "schema": "ashen-vale-map@1",
+  "id": "cave",
+  "name": "HOLLOW CAVE",
+  "interior": false,
+  "floor": ".",
+  "ambient": "cave",
+  "music": "cave",
+  "w": 38,
+  "h": 30,
+  "rows": [
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    "rrrrr==rr==rrrrrrrrrrrrrrr========rrrr",
+    "rrrrrcc===crrrrrrrrrrrrrrrccccccccrrrr",
+    "rrrr=cccccc=rrrrrrrrrrrrrrcccccccc=rrr",
+    "rrrrccccccccrrrrrkSSkrrrrrccuacccccrrr",
+    "rrrrcuccccccrrrrrccccrrrrrcccacccccrrr",
+    "rrrrccccccccrrrrrccccrrrrrrccccccccrrr",
+    "rrrrrrrrc========cccc======cccccrrrrrr",
+    "rrrrrrrrcacccccccccccccccccccacrrrrrrr",
+    "rrrrrrrrcauaccccccaaccucaccccccrrrrrrr",
+    "rrrrrrrrccccccuaaaaaccacccccccrrrrccrr",
+    "rrrrrrrrccccccccuaaacccccccccccrrccccr",
+    "rrrrrrrrrccccccccccaaacccucccccccccccr",
+    "rrrrrrrrcccrrrrcccccccccccccrrcccccccr",
+    "rrrrrrccccrrrrrrrcccccrrrrrrrrrrrccccr",
+    "rrrrrccccccrrrrrrrccrrrrrrrrrrrrrrccrr",
+    "rrrrrccccccrrrrrrrccrrrrrrrrrrrrrrrrrr",
+    "rrrrrrccccrrrrrrrrccrrrrrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrrrrccrrrrrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrr=r=cc=r=rrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrc=cccc=crrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrr=cccaaccc=rrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrccccaaucccrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrccucccccccrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrcccSScccrrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrrccccccrrrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+    "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr"
+  ],
+  "buildings": [],
+  "portals": [
+    {
+      "x": 18,
+      "y": 26,
+      "w": 2,
+      "h": 2,
+      "to": "route1",
+      "tx": 18,
+      "ty": 11
+    },
+    {
+      "x": 18,
+      "y": 6,
+      "w": 2,
+      "h": 1,
+      "to": "boss",
+      "tx": 12,
+      "ty": 18,
+      "requires": "cave_door",
+      "lockMsg": "A stone door. Two rune-locks glow faintly — one west, one east."
+    }
+  ],
+  "props": [
+    {
+      "type": "sign",
+      "x": 15,
+      "y": 24,
+      "text": "Hollow Cave. The dark eats lanterns. It might eat you too."
+    },
+    {
+      "type": "lever",
+      "x": 5,
+      "y": 5,
+      "id": "cave_leverA"
+    },
+    {
+      "type": "lever",
+      "x": 33,
+      "y": 5,
+      "id": "cave_leverB"
+    },
+    {
+      "type": "boulder",
+      "x": 8,
+      "y": 9,
+      "id": "cb1"
+    },
+    {
+      "type": "sign",
+      "x": 21,
+      "y": 10,
+      "text": "Two locks, two levers. West lies buried. East lies guarded."
+    },
+    {
+      "type": "chest",
+      "x": 7,
+      "y": 18,
+      "id": "cave_chest2",
+      "loot": "bundle:potion:2|item:trinket:magic:mp+cdr"
+    },
+    {
+      "type": "pot",
+      "x": 15,
+      "y": 22
+    },
+    {
+      "type": "pot",
+      "x": 22,
+      "y": 22
+    },
+    {
+      "type": "pot",
+      "x": 11,
+      "y": 8
+    },
+    {
+      "type": "pot",
+      "x": 26,
+      "y": 7
+    },
+    {
+      "type": "pot",
+      "x": 27,
+      "y": 8
+    },
+    {
+      "type": "pillar",
+      "x": 17,
+      "y": 7
+    },
+    {
+      "type": "pillar",
+      "x": 20,
+      "y": 7
+    },
+    {
+      "type": "bucket",
+      "x": 9,
+      "y": 19
+    },
+    {
+      "type": "pot",
+      "x": 34,
+      "y": 16
+    },
+    {
+      "type": "pot",
+      "x": 36,
+      "y": 15
+    },
+    {
+      "type": "pot",
+      "x": 35,
+      "y": 14
+    },
+    {
+      "type": "pot",
+      "x": 35,
+      "y": 13
+    },
+    {
+      "type": "pot",
+      "x": 34,
+      "y": 15
+    }
+  ],
+  "npcs": [],
+  "enemies": [
+    {
+      "type": "shade",
+      "x": 12.5,
+      "y": 11.5
+    },
+    {
+      "type": "shade",
+      "x": 25.5,
+      "y": 11.5
+    },
+    {
+      "type": "shade",
+      "x": 11.5,
+      "y": 14.5
+    },
+    {
+      "type": "bat",
+      "x": 7.5,
+      "y": 6.5
+    },
+    {
+      "type": "bat",
+      "x": 27.5,
+      "y": 12.5
+    },
+    {
+      "type": "husk",
+      "x": 32.5,
+      "y": 7.5
+    },
+    {
+      "type": "husk",
+      "x": 30.5,
+      "y": 5.5
+    },
+    {
+      "type": "shade",
+      "x": 28,
+      "y": 5
+    }
+  ],
+  "dialogs": {}
+}

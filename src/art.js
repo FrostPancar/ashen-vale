@@ -1330,17 +1330,29 @@ function buildTiles() {
     ctx.fillStyle = PAL[3];
     ctx.fillRect(3, 11, 1, 1); ctx.fillRect(9, 12, 1, 1); ctx.fillRect(13, 11, 1, 1);
   });
-  TILES.path = tileCanvas((ctx, r) => { fill(ctx, 3); speck(ctx, r, 2, 10); speck(ctx, r, 1, 2); }, 31);
-  TILES.sand = tileCanvas((ctx, r) => { fill(ctx, 3); speck(ctx, r, 2, 14); }, 41);
-  TILES.water = tileCanvas((ctx, r) => {
+  TILES.path = tileCanvas((ctx, r) => { // trodden earth + scattered pebbles
+    fill(ctx, 3); speck(ctx, r, 2, 12); speck(ctx, r, 1, 3);
+    ctx.fillStyle = PAL[1]; ctx.fillRect(4, 6, 2, 1); ctx.fillRect(11, 10, 2, 1);
+  }, 31);
+  TILES.sand = tileCanvas((ctx, r) => { // grain speckle + faint ripples
+    fill(ctx, 3); speck(ctx, r, 2, 12);
+    ctx.fillStyle = PAL[2]; ctx.fillRect(2, 4, 5, 1); ctx.fillRect(9, 8, 5, 1); ctx.fillRect(4, 12, 6, 1);
+  }, 41);
+  TILES.water = tileCanvas((ctx, r) => { // layered ripples with bright glints
     fill(ctx, 0);
     ctx.fillStyle = PAL[1];
-    ctx.fillRect(1, 3, 5, 1); ctx.fillRect(8, 7, 6, 1); ctx.fillRect(3, 12, 5, 1);
+    ctx.fillRect(1, 3, 6, 1); ctx.fillRect(9, 4, 4, 1); ctx.fillRect(4, 8, 7, 1);
+    ctx.fillRect(2, 12, 5, 1); ctx.fillRect(10, 13, 4, 1);
+    ctx.fillStyle = PAL[2];
+    ctx.fillRect(2, 3, 2, 1); ctx.fillRect(5, 8, 2, 1); ctx.fillRect(11, 13, 1, 1);
   }, 51);
   TILES.water2 = tileCanvas((ctx, r) => {
     fill(ctx, 0);
     ctx.fillStyle = PAL[1];
-    ctx.fillRect(3, 4, 5, 1); ctx.fillRect(6, 9, 6, 1); ctx.fillRect(1, 13, 5, 1);
+    ctx.fillRect(3, 4, 6, 1); ctx.fillRect(11, 6, 3, 1); ctx.fillRect(2, 9, 6, 1);
+    ctx.fillRect(9, 12, 5, 1); ctx.fillRect(1, 13, 4, 1);
+    ctx.fillStyle = PAL[2];
+    ctx.fillRect(4, 4, 2, 1); ctx.fillRect(3, 9, 2, 1); ctx.fillRect(10, 12, 1, 1);
   }, 52);
   TILES.flower = tileCanvas((ctx) => {
     fill(ctx, 2);
@@ -1403,11 +1415,14 @@ function buildTiles() {
     for (let y = 0; y < 16; y += 4) ctx.fillRect(0, y, 16, 1);
     ctx.fillRect(5, 1, 1, 3); ctx.fillRect(12, 5, 1, 3); ctx.fillRect(3, 9, 1, 3); ctx.fillRect(9, 13, 1, 3);
   }, 81);
-  TILES.stonefloor = tileCanvas((ctx, r) => {
+  TILES.stonefloor = tileCanvas((ctx, r) => { // flagstones with grout + top-light
     fill(ctx, 2); speck(ctx, r, 1, 5);
-    ctx.fillStyle = PAL[1];
+    ctx.fillStyle = PAL[0];                    // recessed grout reads as seams
     ctx.fillRect(0, 0, 16, 1); ctx.fillRect(0, 8, 16, 1);
     ctx.fillRect(0, 0, 1, 16); ctx.fillRect(8, 0, 1, 8); ctx.fillRect(4, 8, 1, 8); ctx.fillRect(12, 8, 1, 8);
+    ctx.fillStyle = PAL[3];                    // lit upper edge gives the blocks depth
+    ctx.fillRect(1, 1, 6, 1); ctx.fillRect(9, 1, 6, 1);
+    ctx.fillRect(1, 9, 2, 1); ctx.fillRect(5, 9, 6, 1); ctx.fillRect(13, 9, 2, 1);
   }, 91);
   TILES.carpet = tileCanvas((ctx) => {
     fill(ctx, 1);
@@ -1431,7 +1446,10 @@ function buildTiles() {
     ctx.fillStyle = PAL[0];
     ctx.fillRect(3, 3, 2, 1); ctx.fillRect(10, 8, 3, 1); ctx.fillRect(4, 12, 2, 1);
   }, 101);
-  TILES.cavefloor = tileCanvas((ctx, r) => { fill(ctx, 1); speck(ctx, r, 0, 12); speck(ctx, r, 2, 4); }, 111);
+  TILES.cavefloor = tileCanvas((ctx, r) => { // rubble speckle + hairline cracks
+    fill(ctx, 1); speck(ctx, r, 0, 12); speck(ctx, r, 2, 5);
+    ctx.fillStyle = PAL[0]; ctx.fillRect(3, 5, 4, 1); ctx.fillRect(10, 11, 3, 1);
+  }, 111);
   TILES.cliff = tileCanvas((ctx, r) => {
     fill(ctx, 1); speck(ctx, r, 0, 8);
     ctx.fillStyle = PAL[0];
@@ -1508,6 +1526,81 @@ function buildTiles() {
     for (let i = 0; i < 5; i++) ctx.fillRect(2 + i, 9 + i, 2, 1);
     ctx.fillRect(10, 3, 2, 1);            // peg detail in the upper panel
   });
+
+  /* ---- extra terrain (added for richer maps) ---- */
+  TILES.dirt = tileCanvas((ctx, r) => {        // packed earth
+    fill(ctx, 2); speck(ctx, r, 1, 28); speck(ctx, r, 0, 9); speck(ctx, r, 3, 5);
+  }, 201);
+  TILES.gravel = tileCanvas((ctx, r) => {      // loose pebbles
+    fill(ctx, 1);
+    for (let i = 0; i < 16; i++) {
+      const x = (r() * 14) | 0, y = (r() * 14) | 0;
+      ctx.fillStyle = PAL[2]; ctx.fillRect(x, y, 2, 2);
+      ctx.fillStyle = PAL[3]; ctx.fillRect(x, y, 1, 1);
+    }
+    speck(ctx, r, 0, 12);
+  }, 202);
+  TILES.cobble = tileCanvas((ctx) => {         // rounded paving stones
+    fill(ctx, 0);                              // dark mortar
+    const cells = [[1, 1], [6, 1], [11, 1], [3, 6], [8, 6], [12, 6], [1, 11], [6, 11], [11, 11]];
+    for (const [x, y] of cells) {
+      ctx.fillStyle = PAL[2]; ctx.fillRect(x, y, 4, 4);
+      ctx.fillStyle = PAL[3]; ctx.fillRect(x, y, 2, 1);
+      ctx.fillStyle = PAL[1]; ctx.fillRect(x + 3, y + 3, 1, 1);
+    }
+  });
+  TILES.mud = tileCanvas((ctx, r) => {         // wet earth + puddle
+    fill(ctx, 1); speck(ctx, r, 0, 24);
+    ctx.fillStyle = PAL[2]; ctx.fillRect(4, 8, 5, 2); ctx.fillRect(10, 3, 3, 1);
+    ctx.fillStyle = PAL[3]; ctx.fillRect(5, 8, 2, 1);
+  }, 204);
+  TILES.snow = tileCanvas((ctx, r) => {        // snow with drifts
+    fill(ctx, 3); speck(ctx, r, 2, 9); speck(ctx, r, 1, 2);
+    ctx.fillStyle = PAL[2]; ctx.fillRect(2, 11, 6, 1); ctx.fillRect(9, 5, 5, 1);
+  }, 205);
+  TILES.ice = tileCanvas((ctx) => {            // cracked ice
+    fill(ctx, 3);
+    ctx.fillStyle = PAL[2]; ctx.fillRect(0, 0, 16, 1); ctx.fillRect(0, 0, 1, 16);
+    ctx.fillStyle = PAL[1];
+    ctx.fillRect(3, 2, 1, 5); ctx.fillRect(3, 6, 5, 1); ctx.fillRect(8, 6, 1, 6); ctx.fillRect(9, 11, 5, 1);
+  });
+  TILES.ash = tileCanvas((ctx, r) => {         // ashen ground
+    fill(ctx, 1); speck(ctx, r, 0, 20); speck(ctx, r, 2, 6);
+  }, 207);
+  TILES.marble = tileCanvas((ctx) => {         // veined marble floor
+    fill(ctx, 3);
+    ctx.fillStyle = PAL[2]; ctx.fillRect(0, 8, 16, 1); ctx.fillRect(8, 0, 1, 16);
+    ctx.fillStyle = PAL[1];
+    ctx.fillRect(2, 3, 1, 1); ctx.fillRect(3, 4, 1, 1); ctx.fillRect(4, 4, 1, 1); ctx.fillRect(5, 5, 1, 1);
+    ctx.fillRect(10, 10, 1, 1); ctx.fillRect(11, 11, 1, 1); ctx.fillRect(12, 11, 1, 1);
+  });
+  TILES.darkwood = tileCanvas((ctx) => {       // dark plank floor
+    fill(ctx, 1);
+    ctx.fillStyle = PAL[0]; for (let y = 0; y < 16; y += 4) ctx.fillRect(0, y, 16, 1);
+    ctx.fillStyle = PAL[2];
+    ctx.fillRect(5, 1, 1, 3); ctx.fillRect(12, 5, 1, 3); ctx.fillRect(3, 9, 1, 3); ctx.fillRect(9, 13, 1, 3);
+  });
+  TILES.rug = tileCanvas((ctx) => {            // ornate rug
+    fill(ctx, 0);
+    ctx.fillStyle = PAL[2]; ctx.fillRect(1, 1, 14, 14);
+    ctx.fillStyle = PAL[0]; ctx.fillRect(3, 3, 10, 10);
+    ctx.fillStyle = PAL[1]; ctx.fillRect(4, 4, 8, 8);
+    ctx.fillStyle = PAL[3]; ctx.fillRect(7, 5, 2, 6); ctx.fillRect(5, 7, 6, 2);
+    ctx.fillStyle = PAL[2]; ctx.fillRect(0, 7, 1, 2); ctx.fillRect(15, 7, 1, 2); ctx.fillRect(7, 0, 2, 1); ctx.fillRect(7, 15, 2, 1);
+  });
+  TILES.forestfloor = tileCanvas((ctx, r) => { // leaf litter
+    fill(ctx, 1); speck(ctx, r, 0, 10);
+    ctx.fillStyle = PAL[2];
+    for (const [x, y] of [[2, 3], [7, 2], [11, 5], [4, 9], [9, 11], [13, 8], [6, 13]]) { ctx.fillRect(x, y, 2, 1); ctx.fillRect(x, y + 1, 1, 1); }
+    speck(ctx, r, 3, 4);
+  }, 210);
+  TILES.crackedstone = tileCanvas((ctx, r) => {// ruined paving
+    fill(ctx, 2);
+    ctx.fillStyle = PAL[0];
+    ctx.fillRect(0, 0, 16, 1); ctx.fillRect(0, 8, 16, 1); ctx.fillRect(8, 0, 1, 8); ctx.fillRect(4, 8, 1, 8); ctx.fillRect(12, 8, 1, 8);
+    ctx.fillRect(2, 3, 1, 1); ctx.fillRect(3, 4, 1, 1); ctx.fillRect(10, 11, 1, 1); ctx.fillRect(11, 12, 1, 1);
+    speck(ctx, r, 1, 6);
+  }, 211);
 }
 
 // Upright grass tuft sprites for 3D billboards (tall + short variants).
@@ -1534,6 +1627,155 @@ function paintGrassBladeSprite(h = 6) {
   px(ctx, 2, 2, 1); px(ctx, 3, 2, 0);
   return c;
 }
+
+/* ================= EXTRA PROP SPRITES =================
+   Furniture, structures and natural decor in the 4-shade ASCII format
+   ('.' transparent, 0 dark outline .. 3 light highlight). Every row is exactly
+   16 wide. Registered in Art.init().props and surfaced in the Map Builder. */
+
+/* ---- furniture ---- */
+const CHAIR = [
+  '................','.....000000.....','.....032230.....','.....032230.....',
+  '.....032230.....','.....032230.....','.....000000.....','....03222230....',
+  '....03333330....','....00000000....','....0.0..0.0....','....0.0..0.0....',
+  '....0.0..0.0....','....0.0..0.0....','................','................',
+];
+const DESK = [
+  '................','................','..000000000000..','..033333333330..',
+  '..000000000000..','..030.0000.030..','..030.0220.030..','..030.0000.030..',
+  '..030.0000.030..','..030.0220.030..','..000000000000..','..020......020..',
+  '..020......020..','..020......020..','................','................',
+];
+const CABINET = [
+  '...00000000.....','...03333330.....','...03222230.....','...03020230.....',
+  '...03222230.....','...03222230.....','...03020230.....','...03222230.....',
+  '...03222230.....','...03020230.....','...03222230.....','...03333330.....',
+  '...00000000.....','...030..030.....','...020..020.....','................',
+];
+const CLOCK = [
+  '.....000000.....','....03333330....','....03222230....','....03200230....',
+  '....03233230....','....03200230....','....03222230....','....00000000....',
+  '.....032230.....','.....022220.....','.....032230.....','.....032230.....',
+  '.....032230.....','.....032230.....','.....000000.....','................',
+];
+const SOFA = [
+  '................','................','.0000000000000..','.0322222222230..',
+  '.0333333333330..','.0300000000030..','.0322222222230..','.0300000000030..',
+  '.0000000000000..','.0.0......0.0...','.0.0......0.0...','................',
+  '................','................','................','................',
+];
+const VASE = [
+  '................','......0..0......','.....022220.....','......0220......',
+  '......0220......','.....032230.....','....0322230.....','....0322230.....',
+  '....0322230.....','....0322230.....','.....03230......','......000.......',
+  '................','................','................','................',
+];
+const STOVE = [
+  '................','..00000000000...','..03222222230...','..030000000300..',
+  '..030.222.300...','..030.232.300...','..030.222.300...','..030000000300..',
+  '..03222222230...','..030000000300..','..00000000000...','..030.....030...',
+  '..020.....020...','................','................','................',
+].map(r => r.replace(/3000/g, '3000'));
+
+/* ---- structures ---- */
+const WELL = [
+  '................','..0000000000....','..0322222230....','..0300000030....',
+  '..0301111030....','..0301111030....','..0300000030....','..0322222230....',
+  '..0333333330....','..0300000030....','..0322222230....','..0300000030....',
+  '..0000000000....','..030....030....','..020....020....','................',
+];
+const STATUE = [
+  '......0000......','.....032230.....','.....032230.....','......0220......',
+  '.....022220.....','....02322320....','....03200230....','....03222230....',
+  '....03222230....','.....022220.....','......0220......','....00000000....',
+  '...0322222230...','...0000000000...','...030....030...','................',
+];
+const PILLAR = [
+  '....000000......','...03222230.....','...03222230.....','...00000000.....',
+  '....032230......','....032230......','....032230......','....032230......',
+  '....032230......','....032230......','....032230......','....032230......',
+  '...00000000.....','...03222230.....','...03222230.....','...00000000.....',
+];
+const SIGNPOST = [
+  '................','...00000000.....','..0322222230....','..0320000230....',
+  '..0322222230....','..00000000.0....','......020.......','......020.......',
+  '....00000000....','...0322222230...','...0320000230...','...0322222230...',
+  '...00000000.0...','......020.......','......000.......','................',
+];
+const HAYBALE = [
+  '................','................','....000000......','...03222230.....',
+  '..0322022230....','..0320222230....','..0322022230....','..0320222230....',
+  '..0322022230....','..0320222230....','..0322022230....','...03222230.....',
+  '....000000......','................','................','................',
+];
+const WOODPILE = [
+  '................','................','...000.000.000..','..02320232023 0.'.replace('3 ', '30'),
+  '..02320232023 0.'.replace('3 ', '30'),'..00000000000 0.'.replace('0 ', '00'),'...000.000.000..','..0232023202320.',
+  '..0232023202320.','..0000000000000.','...020.020.020..','................',
+  '................','................','................','................',
+];
+const TORCH = [
+  '......00........','.....0330.......','.....0320.......','....032230......',
+  '....033330......','.....0220.......','......00........','......020.......',
+  '......020.......','......020.......','......020.......','......020.......',
+  '......020.......','......020.......','......020.......','......000.......',
+];
+const BUCKET = [
+  '................','................','................','...00000000.....',
+  '..0300000030....','..0322222230....','...03222230.....','...03222230.....',
+  '...03222230.....','...03222230.....','....032230......','....000000......',
+  '................','................','................','................',
+];
+const TENT = [
+  '................','................','.......0........','......020.......',
+  '.....02220......','....0322230.....','...0322 2230....'.replace(' ', '0'),'..032202 2230...'.replace(' ', '0'),
+  '..0322020 230...'.replace(' ', '0'),'.032220020 230..'.replace(' ', '0'),'.0322200020 30..'.replace(' ', '0'),'.00000000000 0..'.replace(' ', '0'),
+  '................','................','................','................',
+];
+
+/* ---- natural decor ---- */
+const MUSHROOM = [
+  '................','................','......0000......','....03222230....',
+  '...0322232230...','..032232232230..','..032223222230..','..000000000000..',
+  '.....0220.......','.....0220.00....','.....0220.0330..','.....0220.0220..',
+  '.....0000.0000..','................','................','................',
+];
+const STUMP = [
+  '................','................','................','................',
+  '....00000000....','...0312123130...','..031212321230..','..031213212130..',
+  '..031312132130..','..000000000000..','..030000000030..','..032222222230..',
+  '..000000000000..','................','................','................',
+];
+const LOG = [
+  '................','................','................','................',
+  '..000000000000..','.03121231312130.','032123212321320.'.replace('320.', '3200'),'032323121323230.'.replace('230.', '2300'),
+  '032123123122320.'.replace('320.', '3200'),'.03000000000030.','..000000000000..','................',
+  '................','................','................','................',
+];
+const REEDS = [
+  '................','...0....0.......','..030..030..0...','..032..032.030..',
+  '..032..032.032..','..032..032.032..','..032.0032.032..','0.032.0032.0320.',
+  '030320032003200.'.replace('00.', '030'),'.03200320030030.','..0200020003000.','...0...0....0...',
+  '................','................','................','................',
+];
+const DEADTREE = [
+  '....0...0..0....','.0..030.030.0...','.030.030003030..','..03000320 030..'.replace(' ', '0'),
+  '...030032003000.','....0300320300..','...0.0320.030...','......03200.....',
+  '.....032230.....','.....032230.....','.....032230.....','.....032230.....',
+  '.....032230.....','.....03230......','....0000000.....','................',
+];
+const CRYSTAL = [
+  '................','................','......03........','......032.......',
+  '.....03220......','.0...032203.....','.03..032203030..','.032.0322032320.',
+  '.03220322203220.','.03220322203220.','..032032220320..','...0203222032 0.'.replace(' ', '0'),
+  '....00032200320.','.......00000....','................','................',
+];
+const CAMPFIRE = [
+  '................','................','......0.........','.....032.0......',
+  '.....032030.....','....03203230....','....03323230....','.....033230.....',
+  '......0330......','...0.......0....','..0313010313 0..'.replace(' ', '0'),'..0313031303130.',
+  '..0303130313030.','..0000000000000.','................','................',
+];
 
 /* ================= EXPORTED ART REGISTRY ================= */
 export const Art = {
@@ -1602,6 +1844,30 @@ export const Art = {
     this.props.stall = asciiCanvas(STALL);
     this.props.fishspot = asciiCanvas(FISHSPOT);
     this.props.basket = asciiCanvas(BASKET);
+    // extra furniture / structures / natural decor
+    this.props.chair = asciiCanvas(CHAIR);
+    this.props.desk = asciiCanvas(DESK);
+    this.props.cabinet = asciiCanvas(CABINET);
+    this.props.clock = asciiCanvas(CLOCK);
+    this.props.sofa = asciiCanvas(SOFA);
+    this.props.vase = asciiCanvas(VASE);
+    this.props.stove = asciiCanvas(STOVE);
+    this.props.well = asciiCanvas(WELL);
+    this.props.statue = asciiCanvas(STATUE);
+    this.props.pillar = asciiCanvas(PILLAR);
+    this.props.signpost = asciiCanvas(SIGNPOST);
+    this.props.haybale = asciiCanvas(HAYBALE);
+    this.props.woodpile = asciiCanvas(WOODPILE);
+    this.props.torch = asciiCanvas(TORCH);
+    this.props.bucket = asciiCanvas(BUCKET);
+    this.props.tent = asciiCanvas(TENT);
+    this.props.mushroom = asciiCanvas(MUSHROOM);
+    this.props.stump = asciiCanvas(STUMP);
+    this.props.log = asciiCanvas(LOG);
+    this.props.reeds = asciiCanvas(REEDS);
+    this.props.deadtree = asciiCanvas(DEADTREE);
+    this.props.crystal = asciiCanvas(CRYSTAL);
+    this.props.campfire = asciiCanvas(CAMPFIRE);
     this.enemies.rat = [asciiCanvas(RAT0), asciiCanvas(RAT1)];
     this.enemies.crawler = [asciiCanvas(CRAWLER0), asciiCanvas(CRAWLER1)];
     this.enemies.thornling = [asciiCanvas(THORNLING0), asciiCanvas(THORNLING1)];

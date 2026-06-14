@@ -1,0 +1,155 @@
+{
+  "schema": "ashen-vale-map@1",
+  "id": "inn",
+  "name": "THE DROWSY LANTERN",
+  "interior": true,
+  "floor": "o",
+  "ambient": "interior",
+  "music": "town",
+  "w": 14,
+  "h": 11,
+  "rows": [
+    "W=W====W==W==W",
+    "WyyyyyyWooWooW",
+    "WyyyyyyWooWooW",
+    "WCyCCCCWoWWoWW",
+    "WooooooooooooW",
+    "WooooooooommoW",
+    "WooooooooommoW",
+    "WommoooooooooW",
+    "WommoooooooooW",
+    "WooooooooooooW",
+    "WWWWWWSSWWWWWW"
+  ],
+  "buildings": [],
+  "portals": [
+    {
+      "x": 6,
+      "y": 10,
+      "w": 2,
+      "h": 1,
+      "to": "town",
+      "tx": 34.5,
+      "ty": 11.5
+    }
+  ],
+  "props": [
+    {
+      "type": "bed",
+      "x": 11,
+      "y": 1
+    },
+    {
+      "type": "bed",
+      "x": 8,
+      "y": 1
+    },
+    {
+      "type": "fireplace",
+      "x": 2,
+      "y": 0
+    },
+    {
+      "type": "table",
+      "x": 10,
+      "y": 5
+    },
+    {
+      "type": "stool",
+      "x": 11,
+      "y": 5
+    },
+    {
+      "type": "stool",
+      "x": 10,
+      "y": 6
+    },
+    {
+      "type": "table",
+      "x": 3,
+      "y": 7
+    },
+    {
+      "type": "stool",
+      "x": 2,
+      "y": 8
+    },
+    {
+      "type": "plant",
+      "x": 9,
+      "y": 1
+    },
+    {
+      "type": "barrel",
+      "x": 11,
+      "y": 9
+    },
+    {
+      "type": "barrel",
+      "x": 12,
+      "y": 9
+    },
+    {
+      "type": "gate",
+      "x": 8,
+      "y": 3
+    },
+    {
+      "type": "gate",
+      "x": 11,
+      "y": 3
+    },
+    {
+      "type": "cabinet",
+      "x": 12,
+      "y": 1
+    },
+    {
+      "type": "clock",
+      "x": 5,
+      "y": 1
+    },
+    {
+      "type": "stove",
+      "x": 4,
+      "y": 1
+    },
+    {
+      "type": "vase",
+      "x": 1,
+      "y": 4
+    },
+    {
+      "type": "chair",
+      "x": 2,
+      "y": 6
+    },
+    {
+      "type": "chair",
+      "x": 11,
+      "y": 5
+    }
+  ],
+  "npcs": [
+    {
+      "id": "innkeeper",
+      "sprite": "villager",
+      "x": 4.5,
+      "y": 2.2,
+      "dir": "down",
+      "service": "inn",
+      "dialog": "innkeeper"
+    },
+    {
+      "id": "patron",
+      "sprite": "villager2",
+      "x": 11.5,
+      "y": 7.5,
+      "dir": "down",
+      "wander": 2,
+      "dialog": "patron"
+    }
+  ],
+  "enemies": [],
+  "dialogs": {}
+}

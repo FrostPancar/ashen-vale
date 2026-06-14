@@ -1,0 +1,96 @@
+{
+  "schema": "ashen-vale-map@1",
+  "id": "smithy",
+  "name": "BRAM'S FORGE",
+  "interior": true,
+  "floor": "o",
+  "ambient": "interior",
+  "music": "town",
+  "w": 12,
+  "h": 10,
+  "rows": [
+    "WWWWWWWWWWWW",
+    "WttttttttttW",
+    "WtWWWttttttW",
+    "WtWWWttttttW",
+    "WtcccttttttW",
+    "WtcccttttttW",
+    "WttttttttttW",
+    "WCCCCttCCCCW",
+    "WottttttttoW",
+    "WWWWWSSWWWWW"
+  ],
+  "buildings": [],
+  "portals": [
+    {
+      "x": 5,
+      "y": 9,
+      "w": 2,
+      "h": 1,
+      "to": "town",
+      "tx": 35.5,
+      "ty": 26.5
+    }
+  ],
+  "props": [
+    {
+      "type": "fireplace",
+      "x": 3,
+      "y": 3
+    },
+    {
+      "type": "anvil",
+      "x": 3,
+      "y": 4
+    },
+    {
+      "type": "rack",
+      "x": 10,
+      "y": 1
+    },
+    {
+      "type": "sign",
+      "x": 4,
+      "y": 8,
+      "text": "\"A dull blade buries its owner.\" — Bram"
+    },
+    {
+      "type": "table",
+      "x": 8,
+      "y": 4
+    },
+    {
+      "type": "stool",
+      "x": 7,
+      "y": 4
+    },
+    {
+      "type": "stool",
+      "x": 9,
+      "y": 4
+    },
+    {
+      "type": "rack",
+      "x": 1,
+      "y": 1
+    },
+    {
+      "type": "barrel",
+      "x": 5,
+      "y": 3
+    }
+  ],
+  "npcs": [
+    {
+      "id": "smith",
+      "sprite": "smith",
+      "x": 4.5,
+      "y": 4.5,
+      "dir": "down",
+      "service": "smith",
+      "dialog": "smith"
+    }
+  ],
+  "enemies": [],
+  "dialogs": {}
+}

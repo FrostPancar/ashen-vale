@@ -698,6 +698,24 @@ export function validateStamp(world, ox, oy, patchDef) {
   return true;
 }
 
+// Ambient density for standalone sprinkle decor: 1 = spawn every authored extra,
+// lower values thin them out. Tune this one knob to make maps busier/quieter.
+// Thinning is deterministic (hashed by map + position + type) so it stays stable
+// across reloads and is identical for every coop client — no collision desync.
+export const SPRINKLE_DENSITY = 0.8;
+
+// Decide whether a standalone extra survives thinning. Interactive or scene-bound
+// decor (anything with lore/behaviour, or part of a composed patch) is never cut —
+// only purely-ambient filler is.
+function keepExtra(mapId, e) {
+  if (SPRINKLE_DENSITY >= 1) return true;
+  if (e.patchId || e.id || e.interact || e.text || e.signName || e.keep) return true;
+  let h = 2166136261;
+  const s = `${mapId}:${e.type}:${e.x}:${e.y}`;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return ((h >>> 0) / 4294967296) < SPRINKLE_DENSITY;
+}
+
 /**
  * Apply sprinkle plan for a loaded map.
  * @param {import('./world.js').World} world
@@ -714,6 +732,7 @@ export function applyMapSprinkles(world, mapId, flags) {
       if (def) world.stampPatch(def, p.x, p.y, p.id);
     }
     for (const e of plan.extras || []) {
+      if (!keepExtra(mapId, e)) continue;
       world.spawnDecor(e, flags);
     }
   }
